@@ -1,409 +1,48 @@
 ---
 import { verificationPath } from "../lib/verify-client";
-import { Icon } from "astro-iconset/components";
 import { getEmDashEntry } from "emdash";
 import { PortableText } from "emdash/ui";
 import Base from "../layouts/Base.astro";
 import { disableSharedCache, isCampusRequest } from "../lib/campus-access";
 
-const { entry: page, cacheHint } = await getEmDashEntry("pages", "contact");
+// No delivery destination is configured. Never accept or log personal details.
+if (Astro.request.method === "POST") {
+	return new Response("お問い合わせ窓口は準備中です。現在、このページからの送信は受け付けていません。", {
+		status: 503,
+		headers: { "Cache-Control": "private, no-store" },
+	});
+}
 
-// `cache.set` only applies to GET responses; wrap defensively because
-// this route also handles POST submissions where the cache API may
-// reject the call.
-try {
-	Astro.cache.set(cacheHint);
-} catch {}
+const { entry: page, cacheHint, error } = await getEmDashEntry("pages", "contact");
+if (error && !(error instanceof Error && error.name === "LiveEntryNotFoundError")) throw error;
+Astro.cache.set(cacheHint);
 
 if (page?.data.campus_only) {
 	disableSharedCache(Astro.cache, Astro.response.headers);
 	Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
 	if (!(await isCampusRequest(Astro.cookies))) return Astro.redirect(verificationPath(Astro.url));
 }
-
-// Handle form submission
-// NOTE: This is demo code. For production, add:
-// - CSRF token validation
-// - Rate limiting (e.g., via Cloudflare or middleware)
-// - Actual email sending or webhook integration
-let formStatus: "idle" | "success" | "error" = "idle";
-let formMessage = "";
-
-if (Astro.request.method === "POST") {
-	try {
-		const formData = await Astro.request.formData();
-		const name = formData.get("name")?.toString() || "";
-		const email = formData.get("email")?.toString() || "";
-		const company = formData.get("company")?.toString() || "";
-		const message = formData.get("message")?.toString() || "";
-
-		if (!name || !email || !message) {
-			formStatus = "error";
-			formMessage = "必須項目が未入力です。氏名、メールアドレス、相談内容を入力してください。";
-		} else if (!email.includes("@")) {
-			formStatus = "error";
-			formMessage = "メールアドレスの形式を確認し、もう一度入力してください。";
-		} else {
-			// TODO: Replace with actual email/webhook integration
-			console.log("Contact form submission:", {
-				name,
-				email,
-				company,
-				message,
-			});
-			formStatus = "success";
-			formMessage = "お問い合わせ内容を受け付けました。担当者が確認します。";
-		}
-	} catch {
-		formStatus = "error";
-		formMessage = "送信を完了できませんでした。時間をおいて、もう一度お試しください。";
-	}
-}
-
-const pageContent = page?.data.content;
 ---
 
-<Base
-	title="お問い合わせ"
-	description="東邦大学医学部 IT部への参加相談や活動に関するお問い合わせを受け付けています。"
-	content={page ? { collection: "pages", id: page.data.id, slug: page.id } : undefined}
->
-	{pageContent ? <PortableText value={pageContent} /> : (
-		<section class="contact-intro">
-			<div class="container">
-				<p>CONTACT · IT CLUB</p>
-				<h1>参加の相談も、<br />技術の話も。</h1>
-			</div>
-		</section>
-	)}
-
-	<section class="contact-form-section section">
-		<div class="container">
-			<div class="contact-grid">
-				<div class="contact-info">
-					<h2>同好会へのお問い合わせ</h2>
-					<p>参加前の質問、活動内容、共同制作の相談などをお送りください。</p>
-
-					<div class="contact-methods">
-						<div class="contact-method">
-							<div class="icon-tile contact-icon">
-								<Icon name="ph:envelope" aria-hidden="true" />
-							</div>
-							<div class="contact-method-content">
-								<h4>FORM</h4>
-								<a href="#contact-form">このページから相談する</a>
-							</div>
-						</div>
-						<div class="contact-method">
-							<div class="icon-tile contact-icon">
-								<Icon name="ph:code" aria-hidden="true" />
-							</div>
-							<div class="contact-method-content">
-								<h4>GITHUB</h4>
-								<a href="https://github.com/tmed-it" target="_blank" rel="noreferrer">公開プロジェクトを見る ↗</a>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="contact-form-wrapper" id="contact-form">
-					{
-						formStatus === "success" ? (
-							<div class="form-success">
-								<div class="success-icon">✓</div>
-								<h3>受け付けました</h3>
-								<p>{formMessage}</p>
-								<a href="/contact" class="btn btn-secondary">
-									別の内容を送る
-								</a>
-							</div>
-						) : (
-							<form method="POST" class="contact-form" data-contact-form>
-								{formStatus === "error" && (
-									<div class="form-error" role="alert">
-										<span aria-hidden="true">!</span>
-										<p>{formMessage}</p>
-									</div>
-								)}
-
-								<div class="form-row">
-									<div class="form-field">
-										<label for="name">氏名 <span>必須</span></label>
-										<input
-											type="text"
-											id="name"
-											name="name"
-											required
-											aria-required="true"
-											aria-invalid={formStatus === "error" ? "true" : undefined}
-											placeholder="山田 太郎"
-											autocomplete="name"
-										/>
-										<p class="form-helper">活動名簿で確認できる氏名をご記入ください。</p>
-									</div>
-									<div class="form-field">
-										<label for="email">メールアドレス <span>必須</span></label>
-										<input
-											type="email"
-											id="email"
-											name="email"
-											required
-											aria-required="true"
-											aria-invalid={formStatus === "error" ? "true" : undefined}
-											placeholder="name@example.jp"
-											autocomplete="email"
-										/>
-										<p class="form-helper">返信を受け取れるアドレスをご記入ください。</p>
-									</div>
-								</div>
-
-								<div class="form-field">
-									<label for="company">所属</label>
-									<input
-										type="text"
-										id="company"
-										name="company"
-										placeholder="学年・学部など（任意）"
-										autocomplete="organization"
-									/>
-									<p class="form-helper">学年・学部など、必要な範囲でご記入ください。</p>
-								</div>
-
-								<div class="form-field">
-									<label for="message">相談内容 <span>必須</span></label>
-									<textarea
-										id="message"
-										name="message"
-										required
-										aria-required="true"
-										aria-invalid={formStatus === "error" ? "true" : undefined}
-										rows="5"
-										placeholder="参加について知りたいことや、相談したい内容をご記入ください。"
-									/>
-									<p class="form-helper">個人情報や機微な情報は記載しないでください。</p>
-								</div>
-
-								<button type="submit" class="btn btn-primary btn-lg" data-submit>
-									<span data-submit-label>内容を送る</span><span aria-hidden="true">↗</span>
-								</button>
-							</form>
-						)
-					}
-				</div>
-			</div>
+<Base title="お問い合わせ" description="東邦大学医学部 IT部のお問い合わせ窓口の案内です。"
+	content={page ? { collection: "pages", id: page.data.id, slug: page.id } : undefined}>
+	<section class="contact-page">
+		<p class="contact-page__label">CONTACT · IT CLUB</p>
+		<h1>お問い合わせ</h1>
+		{page?.data.content && <PortableText value={page.data.content} />}
+		<p>お問い合わせ窓口は準備中です。受付方法が決まり次第、このページでご案内します。</p>
+		<p>活動内容や参加については、ホームページのFAQもご確認ください。</p>
+		<div class="contact-page__links">
+			<a href="/#faq" class="btn btn-primary">よくある質問を見る <span aria-hidden="true">↗</span></a>
+			<a href="https://github.com/tmed-it" class="btn btn-secondary" target="_blank" rel="noreferrer">公開プロジェクトを見る <span aria-hidden="true">↗</span></a>
 		</div>
 	</section>
 </Base>
 
-<script>
-	document.querySelector<HTMLFormElement>("[data-contact-form]")?.addEventListener("submit", (event) => {
-		const form = event.currentTarget as HTMLFormElement;
-		const submit = form.querySelector<HTMLButtonElement>("[data-submit]");
-		const label = form.querySelector<HTMLElement>("[data-submit-label]");
-		if (!submit || !label) return;
-		submit.dataset.state = "loading";
-		submit.setAttribute("aria-busy", "true");
-		submit.disabled = true;
-		label.textContent = "送信中…";
-	});
-</script>
-
 <style>
-	.contact-intro {
-		padding-block: var(--space-4xl) var(--space-3xl);
-		border-bottom: var(--rule-hair) solid var(--color-rule);
-	}
-
-	.contact-intro p { color: var(--color-accent); font-family: var(--font-body); font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-label); }
-	.contact-intro h1 { max-width: 13ch; margin-top: var(--space-md); font-size: var(--text-display-s); line-height: var(--leading-display); letter-spacing: var(--tracking-display); }
-
-	.contact-form-section {
-		padding-bottom: var(--space-4xl);
-	}
-
-	.contact-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-		gap: clamp(var(--space-xl), 7vw, var(--space-3xl));
-		align-items: start;
-	}
-
-	.contact-info h2 {
-		font-size: clamp(var(--text-xl), 4vw, var(--text-2xl));
-		line-height: var(--leading-heading);
-		margin-bottom: var(--space-sm);
-	}
-
-	.contact-info > p {
-		color: var(--color-muted);
-		margin-bottom: var(--space-xl);
-		line-height: var(--leading-body);
-	}
-
-	.contact-methods {
-		display: flex;
-		flex-direction: column;
-		border-top: var(--rule-hair) solid var(--color-rule);
-	}
-
-	.contact-method {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-		padding-block: var(--space-sm);
-		border-bottom: var(--rule-hair) solid var(--color-rule);
-	}
-
-	.contact-icon {
-		font-size: var(--text-md);
-	}
-
-	.contact-method-content h4 {
-		font-family: var(--font-body);
-		font-size: var(--text-xs);
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		margin-bottom: var(--space-3xs);
-	}
-
-	.contact-method-content a {
-		display: inline-flex;
-		min-height: 2.75rem;
-		align-items: center;
-		color: var(--color-accent);
-		font-size: var(--text-base);
-		white-space: nowrap;
-	}
-
-	.contact-form-wrapper {
-		background: var(--color-paper-2);
-		color: var(--color-ink);
-		border: var(--rule-hair) solid var(--color-rule-2);
-		padding: clamp(var(--space-md), 4vw, var(--space-xl));
-	}
-
-	.contact-form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-lg);
-	}
-
-	.form-row {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: var(--space-md);
-	}
-
-	.form-field {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2xs);
-	}
-
-	.form-field label {
-		font-size: var(--text-sm);
-		font-weight: 700;
-	}
-
-	.form-field label span { margin-inline-start: var(--space-2xs); color: var(--color-accent); font-family: var(--font-body); font-size: var(--text-xs); }
-	.form-helper { min-height: 1lh; color: var(--color-muted); font-size: var(--text-xs); line-height: 1.5; }
-
-	.form-field input,
-	.form-field textarea {
-		min-height: 3rem;
-		padding: var(--space-xs) var(--space-sm);
-		padding-inline-end: var(--space-xl);
-		font-family: inherit;
-		font-size: var(--text-base);
-		color: var(--color-ink);
-		background: var(--color-paper);
-		border: var(--rule-hair) solid var(--color-rule-2);
-		border-radius: var(--radius-input);
-		outline: var(--rule-fine) solid transparent;
-		outline-offset: var(--rule-hair);
-		transition: background-color var(--dur-short) var(--ease-out);
-	}
-
-	.form-field input:focus-visible,
-	.form-field textarea:focus-visible {
-		outline-color: var(--color-focus);
-	}
-
-	.form-field input::placeholder,
-	.form-field textarea::placeholder {
-		color: var(--color-muted);
-	}
-
-	.form-field textarea {
-		resize: vertical;
-		min-height: 8rem;
-	}
-
-	.form-field input:disabled,
-	.form-field textarea:disabled { cursor: not-allowed; opacity: 0.55; }
-	.form-field input[aria-invalid="true"],
-	.form-field textarea[aria-invalid="true"] { border-color: var(--color-error); }
-	.form-field input[data-state="success"],
-	.form-field textarea[data-state="success"] { border-color: var(--color-accent); }
-	.form-field input[aria-busy="true"],
-	.form-field textarea[aria-busy="true"] { cursor: progress; }
-
-	.form-error {
-		display: flex;
-		align-items: flex-start;
-		gap: var(--space-xs);
-		padding: var(--space-sm);
-		background: var(--color-paper);
-		color: var(--color-error);
-		border: var(--rule-hair) solid var(--color-error);
-		font-size: var(--text-sm);
-	}
-	.form-error > span { display: grid; width: 1.25rem; height: 1.25rem; flex: 0 0 auto; place-items: center; border: var(--rule-hair) solid currentColor; font-family: var(--font-body); font-weight: 700; }
-
-	.form-success {
-		display: grid;
-		justify-items: start;
-		gap: var(--space-sm);
-		padding: var(--space-lg);
-	}
-
-	.success-icon {
-		width: 3rem;
-		height: 3rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: var(--text-xl);
-		color: var(--color-accent-ink);
-		background: var(--color-accent);
-	}
-
-	.form-success h3 {
-		font-size: var(--text-xl);
-	}
-
-	.form-success p {
-		color: var(--color-muted);
-		margin-bottom: var(--space-sm);
-	}
-
-	@media (hover: hover) and (pointer: fine) {
-		.contact-method-content a:hover { text-decoration: underline; text-underline-offset: var(--space-3xs); }
-		.form-field input:hover,
-		.form-field textarea:hover { background: var(--color-paper-3); }
-	}
-
-	@media (max-width: 60rem) {
-		.contact-grid {
-			grid-template-columns: minmax(0, 1fr);
-			gap: var(--space-2xl);
-		}
-	}
-
-	@media (max-width: 40rem) {
-		.form-row {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.contact-method-content a { font-size: var(--text-sm); }
-	}
+	.contact-page { width: min(100% - 2.5rem, 52rem); margin-inline: auto; padding-block: clamp(9rem, 18vw, 14rem) 8rem; }
+	.contact-page__label { color: var(--color-accent); font: 600 var(--text-xs) var(--font-outlier); letter-spacing: .12em; }
+	h1 { margin-block: 1.5rem 2rem; font-size: clamp(2.5rem, 7vw, 4rem); line-height: 1.1; }
+	p { color: var(--color-ink-2); }
+	.contact-page__links { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
 </style>
