@@ -1,0 +1,62 @@
+---
+interface NewsItem {
+	id: string;
+	data: {
+		title: string;
+		publishedAt: Date | null;
+		campus_only: boolean;
+	};
+}
+
+interface Props {
+	news: NewsItem[];
+}
+
+const { news } = Astro.props;
+const formatDate = (date: Date) => new Intl.DateTimeFormat("ja-JP", {
+	year: "numeric",
+	month: "2-digit",
+	day: "2-digit",
+	timeZone: "Asia/Tokyo",
+}).format(date);
+---
+
+<section class="club-section news-preview" id="news" aria-labelledby="news-preview-title">
+	<div class="club-container">
+		<header class="club-section__header news-preview__header reveal" data-reveal>
+			<h2 id="news-preview-title">お知らせ</h2>
+			<a href="/newsroom">すべて見る <span aria-hidden="true">↗</span></a>
+		</header>
+		<div class="news-preview__list">
+			{news.length > 0 ? news.map((item) => (
+				<a class="news-preview__item" href={`/newsroom/${item.id}`}>
+					{item.data.publishedAt && <time datetime={item.data.publishedAt.toISOString()}>{formatDate(item.data.publishedAt)}</time>}
+					<span class="news-preview__title">{item.data.title}</span>
+					{item.data.campus_only && <span class="news-preview__badge">学内限定</span>}
+					<span class="news-preview__arrow" aria-hidden="true">↗</span>
+				</a>
+			)) : <p class="news-preview__empty">現在、公開中のお知らせはありません。</p>}
+		</div>
+	</div>
+</section>
+
+<style>
+	.news-preview { border-top: 1px solid var(--color-rule); }
+	.news-preview__header { display: flex; align-items: baseline; justify-content: space-between; }
+	.news-preview__header a { color: var(--color-accent); font-size: .875rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+	.news-preview__header a:hover { text-decoration: underline; text-underline-offset: .25em; }
+	.news-preview__list { border-top: 1px solid var(--color-rule); }
+	.news-preview__item { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) auto auto; align-items: center; gap: 1.25rem; padding: 1.25rem 0; color: var(--color-ink); border-bottom: 1px solid var(--color-rule); text-decoration: none; }
+	.news-preview__item time { color: var(--color-muted); font-family: var(--font-outlier); font-size: .8125rem; }
+	.news-preview__title { min-width: 0; font-weight: 700; line-height: 1.6; }
+	.news-preview__badge { padding: .2rem .55rem; color: var(--color-accent); border: 1px solid var(--color-accent); font-size: .6875rem; font-weight: 700; white-space: nowrap; }
+	.news-preview__arrow { color: var(--color-accent); font-size: 1.25rem; transition: transform var(--dur-short) var(--ease-out); }
+	.news-preview__item:hover .news-preview__title { color: var(--color-accent); }
+	.news-preview__item:hover .news-preview__arrow { transform: translate(.2rem, -.2rem); }
+	.news-preview__empty { padding: 1.5rem 0; color: var(--color-muted); border-bottom: 1px solid var(--color-rule); }
+	.news-preview a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+	@media (max-width: 40rem) {
+		.news-preview__item { grid-template-columns: minmax(0, 1fr) auto auto; gap: .4rem .75rem; }
+		.news-preview__item time { grid-column: 1 / -1; }
+	}
+</style>

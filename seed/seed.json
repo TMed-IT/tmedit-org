@@ -1,0 +1,526 @@
+{
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "meta": {
+    "name": "東邦大学医学部 IT部",
+    "description": "IT部の公式ホームページ",
+    "author": "IT部"
+  },
+  "settings": {
+    "title": "IT部",
+    "tagline": "プログラミングやWeb開発を、仲間と一緒に試しながら学ぶ学生コミュニティです。"
+  },
+  "collections": [
+    {
+      "slug": "news",
+      "label": "お知らせ",
+      "labelSingular": "お知らせ",
+      "urlPattern": "/newsroom/{slug}",
+      "supports": ["drafts", "revisions", "seo"],
+      "commentsEnabled": false,
+      "fields": [
+        {
+          "slug": "title",
+          "label": "タイトル",
+          "type": "string",
+          "required": true
+        },
+        {
+          "slug": "excerpt",
+          "label": "概要",
+          "type": "text"
+        },
+        {
+          "slug": "content",
+          "label": "本文",
+          "type": "portableText"
+        },
+        {
+          "slug": "campus_only",
+          "label": "学内限定",
+          "type": "boolean",
+          "required": true,
+          "defaultValue": false
+        }
+      ]
+    },
+    {
+      "slug": "pages",
+      "label": "ページ",
+      "labelSingular": "ページ",
+      "urlPattern": "/{slug}",
+      "supports": ["drafts", "revisions", "seo"],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "タイトル",
+          "type": "string",
+          "required": true
+        },
+        {
+          "slug": "content",
+          "label": "本文（通常ページ用）",
+          "type": "portableText"
+        },
+        { "slug": "hero_headline", "label": "ホーム: メイン見出し", "type": "text" },
+        { "slug": "hero_subheadline", "label": "ホーム: 紹介文", "type": "text" },
+        { "slug": "hero_cta_label", "label": "ホーム: ボタン文言", "type": "string" },
+        { "slug": "hero_cta_url", "label": "ホーム: ボタンリンク", "type": "string" },
+        { "slug": "activities_headline", "label": "ホーム: 活動の見出し", "type": "string" },
+        { "slug": "activities_subheadline", "label": "ホーム: 活動の説明", "type": "text" },
+        {
+          "slug": "activities_items",
+          "label": "ホーム: 活動項目",
+          "type": "repeater",
+          "validation": {
+            "subFields": [
+              { "slug": "title", "label": "項目名", "type": "string", "required": true },
+              { "slug": "description", "label": "説明", "type": "text", "required": true }
+            ]
+          }
+        },
+        { "slug": "projects_headline", "label": "ホーム: プロジェクトの見出し", "type": "string" },
+        { "slug": "projects_subheadline", "label": "ホーム: プロジェクトの説明", "type": "text" },
+        { "slug": "projects_organization", "label": "ホーム: GitHub組織", "type": "string" },
+        { "slug": "projects_github_url", "label": "ホーム: GitHubリンク", "type": "url" },
+        { "slug": "projects_max", "label": "ホーム: 表示件数", "type": "integer" },
+        { "slug": "faq_headline", "label": "ホーム: FAQの見出し", "type": "string" },
+        { "slug": "faq_subheadline", "label": "ホーム: FAQの説明", "type": "text" },
+        {
+          "slug": "faq_items",
+          "label": "ホーム: 質問と回答",
+          "type": "repeater",
+          "validation": {
+            "subFields": [
+              { "slug": "question", "label": "質問", "type": "string", "required": true },
+              { "slug": "answer", "label": "回答", "type": "text", "required": true }
+            ]
+          }
+        },
+        {
+          "slug": "campus_only",
+          "label": "学内限定",
+          "type": "boolean",
+          "required": true,
+          "defaultValue": false
+        }
+      ]
+    }
+  ],
+  "menus": [
+    {
+      "name": "primary",
+      "label": "メインナビゲーション",
+      "items": [
+        { "type": "custom", "label": "お知らせ", "url": "/newsroom" },
+        { "type": "custom", "label": "活動", "url": "/#activities" },
+        { "type": "custom", "label": "プロジェクト", "url": "/#projects" },
+        { "type": "custom", "label": "FAQ", "url": "/#faq" }
+      ]
+    },
+    {
+      "name": "footer_product",
+      "label": "フッター: サイト内リンク",
+      "items": [
+        { "type": "custom", "label": "お知らせ", "url": "/newsroom" },
+        { "type": "custom", "label": "活動", "url": "/#activities" },
+        { "type": "custom", "label": "プロジェクト", "url": "/#projects" },
+        { "type": "custom", "label": "FAQ", "url": "/#faq" }
+      ]
+    },
+    {
+      "name": "footer_company",
+      "label": "フッター: 外部リンク",
+      "items": [
+        {
+          "type": "custom",
+          "label": "プライバシーポリシー",
+          "url": "/privacy"
+        },
+        { "type": "custom", "label": "利用規約", "url": "/terms" },
+        {
+          "type": "custom",
+          "label": "GitHub",
+          "url": "https://github.com/tmed-it"
+        }
+      ]
+    },
+    {
+      "name": "footer_support",
+      "label": "フッター: 管理",
+      "items": [
+        {
+          "type": "custom",
+          "label": "管理画面",
+          "url": "/_emdash/api/auth/internal/authorize"
+        }
+      ]
+    }
+  ],
+  "content": {
+    "pages": [
+      {
+        "id": "home",
+        "slug": "home",
+        "status": "published",
+        "data": {
+          "title": "ホーム",
+          "campus_only": false,
+          "hero_headline": "仲間と学び、\n技術でつくる。",
+          "hero_subheadline": "初心者から経験者まで、プログラミングやWeb制作を一緒に学ぶ部活です。",
+          "hero_cta_label": "活動を見る",
+          "hero_cta_url": "#activities",
+          "activities_headline": "活動内容",
+          "activities_subheadline": "プログラミング学習からサービス運営まで、興味に合わせて実践できます。",
+          "activities_items": [
+            {
+              "title": "オンラインコミュニティ",
+              "description": "Discordで質問や技術共有ができます。授業や個人制作の悩みも気軽に相談できます。"
+            },
+            {
+              "title": "プログラミング",
+              "description": "PythonやJavaScriptを中心に、基礎から手を動かして学びます。"
+            },
+            {
+              "title": "サービスの運営",
+              "description": "実際に使われるサービスを保守し、利用者の声をもとに改善します。"
+            },
+            {
+              "title": "講座と共有会",
+              "description": "制作で得た知識や便利なツールの使い方を、短い講座で共有します。"
+            }
+          ],
+          "projects_headline": "公開プロジェクト",
+          "projects_subheadline": "同好会で開発・運営しているプロジェクトを紹介します。",
+          "projects_organization": "tmed-it",
+          "projects_github_url": "https://github.com/tmed-it",
+          "projects_max": 5,
+          "faq_headline": "よくある質問",
+          "faq_subheadline": "参加前によくいただく質問をまとめました。",
+          "faq_items": [
+                {
+                  "question": "初心者でも参加できますか？",
+                  "answer": "はい。経験は問いません。「少し興味がある」という段階から参加できます。分からないことを質問しやすく、自分のペースで手を動かせる環境をつくっています。"
+                },
+                {
+                  "question": "どんなパソコンが必要ですか？",
+                  "answer": "WindowsとMacのどちらでも参加できます。開発環境を整えにくいことがあるため、iPadなどのタブレットだけでの参加は推奨していません。"
+                },
+                {
+                  "question": "活動は週にどれくらいありますか？",
+                  "answer": "オンラインでのやり取りはいつでも自由です。活動は基本的に自由参加なので、実習やアルバイトの予定に合わせて無理なく続けられます。"
+                },
+                {
+                  "question": "部費や費用はかかりますか？",
+                  "answer": "使うソフトウェアやサービスによって、費用がかかる場合があります。活動に必要なものや費用は、参加前にご確認ください。"
+                },
+                {
+                  "question": "プログラミング以外も学べますか？",
+                  "answer": "学べます。ExcelやWordなどのソフトウェア、デザイン、サービス運営など、メンバーの興味に合わせて幅広いテーマを扱います。"
+                },
+                {
+                  "question": "どんな人が参加できますか？",
+                  "answer": "学年や経験を問わず、ITに興味のある学生が参加できます。勉強してみたいことや、つくってみたいものがあれば気軽にご相談ください。"
+                },
+                {
+                  "question": "参加するにはどうすればいいですか？",
+                  "answer": "お問い合わせからご相談ください。興味のある分野や、参加にあたって気になることをお知らせいただければ、活動内容や参加方法をご案内します。"
+                }
+          ]
+        }
+      },
+      {
+        "id": "privacy",
+        "slug": "privacy",
+        "status": "published",
+        "data": {
+          "title": "プライバシーポリシー",
+          "campus_only": false,
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "東邦大学医学部 IT部（以下「当部」）は、このウェブサイトで取り扱う個人情報を、次の方針に基づいて管理します。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "1. 取得する情報" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "お問い合わせフォームを利用した際に、氏名、メールアドレス、所属、お問い合わせ内容を取得します。お知らせメールを購読する際は、登録と配信のためにメールアドレスを取得します。また、サイトの運用や安全性の確認に必要な範囲で、IPアドレス、ブラウザの種類、アクセス日時などがサーバーログに記録される場合があります。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "2. 利用目的" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "取得した情報は、お問い合わせへの回答、購読を希望した方へのお知らせメールの配信、活動に関する連絡、サイトの運用・保守、不正利用の防止、利用状況を踏まえた改善のために利用します。お知らせメールは各メールのリンクから配信停止でき、停止時に購読情報を削除します。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "3. 第三者への提供" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "本人の同意がある場合、法令に基づく場合、またはサイト運営に必要な業務を委託する場合を除き、取得した個人情報を第三者へ提供しません。委託先には、必要な範囲に限って情報を取り扱わせます。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "4. 情報の管理" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "個人情報への不正アクセス、紛失、漏えいを防ぐため、必要な安全管理措置を講じます。取得した情報は、利用目的に照らして不要となった後、適切な方法で削除します。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "5. 外部サービスとリンク" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "本サイトから移動できる外部サイトでは、それぞれの運営者が定めるプライバシーポリシーが適用されます。外部サイトでの情報の取り扱いについては、各サービスの方針をご確認ください。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "6. 開示・訂正・削除の依頼" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "ご自身の個人情報について、開示、訂正、利用停止、削除を希望する場合は、お問い合わせフォームからご連絡ください。本人確認を行ったうえで、合理的な範囲で対応します。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "7. 方針の改定" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "運用内容や法令の変更に応じて、この方針を改定することがあります。重要な変更は、本サイト上でお知らせします。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [{ "_type": "span", "text": "最終更新：2026年9月24日" }]
+            }
+          ]
+        }
+      },
+      {
+        "id": "terms",
+        "slug": "terms",
+        "status": "published",
+        "data": {
+          "title": "利用規約",
+          "campus_only": false,
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "この利用規約は、東邦大学医学部 IT部（以下「当部」）が運営するウェブサイトの利用条件を定めるものです。本サイトを利用した時点で、本規約に同意したものとみなします。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "1. 適用範囲" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "本規約は、本サイトの閲覧、お問い合わせフォームの利用、その他本サイトを通じて提供する機能に適用されます。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "2. 掲載情報" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "当部は掲載内容の正確性に配慮しますが、情報が常に最新かつ完全であることを保証するものではありません。活動予定や案内は変更される場合があります。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "3. 禁止事項" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "法令や公序良俗に反する行為、第三者の権利を侵害する行為、虚偽情報の送信、不正アクセス、サイトの運営を妨げる行為を禁止します。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "4. 著作権" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "本サイトに掲載する文章、ロゴ、図表、プログラムなどの権利は、当部または正当な権利者に帰属します。法令で認められる場合を除き、権利者の許可を得ない転載、改変、再配布を禁じます。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "5. 外部サービス" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "本サイトには、当部が管理しない外部サイトへのリンクが含まれる場合があります。外部サイトの内容や利用によって生じた損害について、当部は責任を負いません。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "6. 免責事項" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "本サイトの利用または利用できなかったことにより生じた損害について、当部に故意または重大な過失がある場合を除き、当部は責任を負いません。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "7. サイトの変更・停止" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "保守、障害対応、運営上の都合などにより、予告なく本サイトの内容を変更し、または提供を一時停止することがあります。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "8. 規約の変更" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "必要に応じて本規約を変更することがあります。変更後の規約は、本サイトに掲載した時点から適用します。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [{ "_type": "span", "text": "9. 準拠法" }]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "本規約の解釈には、日本法を適用します。"
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [{ "_type": "span", "text": "最終更新：2026年9月24日" }]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

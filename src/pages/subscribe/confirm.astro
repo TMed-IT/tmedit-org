@@ -1,0 +1,44 @@
+---
+import { verificationPath } from "../../lib/verify-client";
+import Base from "../../layouts/Base.astro";
+import { isCampusRequest } from "../../lib/campus-access";
+import { validToken } from "../../lib/news-subscriptions";
+
+Astro.cache.set(false);
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("Referrer-Policy", "no-referrer");
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+const token = Astro.url.searchParams.get("token");
+const allowed = await isCampusRequest(Astro.cookies);
+---
+
+<Base title="メール購読の確認">
+	<section class="subscription-action">
+		<p class="subscription-action__label">NEWSROOM / SUBSCRIBE</p>
+		<h1>メール購読の確認</h1>
+		{!allowed ? (
+			<p>登録を確定する前に、<a href={verificationPath(Astro.url)}>大学のメールアドレスで在籍確認してください</a>。確認後、このページに戻ります。</p>
+		) : validToken(token) ? (
+			<>
+				<p>お知らせの更新をメールで受け取りますか？</p>
+				<form method="post" action="/api/subscribe/confirm">
+					<input type="hidden" name="token" value={token} />
+					<button type="submit">購読を確定する</button>
+				</form>
+			</>
+		) : <p>確認リンクが無効です。お知らせページから登録し直してください。</p>}
+		<a href="/newsroom">お知らせ一覧へ戻る</a>
+	</section>
+</Base>
+
+<style>
+	.subscription-action { width: min(100% - 2.5rem, 40rem); margin-inline: auto; padding-block: clamp(10rem, 18vw, 14rem) 8rem; }
+	.subscription-action__label { color: var(--color-accent); font: 600 var(--text-xs) var(--font-outlier); letter-spacing: .12em; }
+	h1 { margin-block: 1.5rem; font-size: clamp(2.5rem, 7vw, 4rem); line-height: 1.1; }
+	p { color: var(--color-ink-2); }
+	form { margin-top: 2rem; }
+	button { min-height: 3rem; padding: .75rem 1.5rem; color: var(--color-button-text); background: var(--color-button-primary); border: 1px solid var(--color-button-primary); border-radius: .25rem; font: inherit; font-weight: 700; cursor: pointer; }
+	button:hover { background: var(--color-button-primary-hover); }
+	button:focus-visible, a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+	a { display: inline-block; margin-top: 2.5rem; color: var(--color-accent); text-decoration: underline; text-underline-offset: .3em; }
+</style>

@@ -1,0 +1,67 @@
+---
+interface FAQItem {
+	question: string;
+	answer: string;
+}
+
+interface Props {
+	node: {
+		_key?: string;
+		headline?: string;
+		subheadline?: string;
+		items?: FAQItem[];
+	};
+}
+
+const { node } = Astro.props;
+const items = node.items || [];
+const groupName = `faq-${node._key || "section"}`;
+---
+
+<section class="club-section faq-section" id={node._key || "faq"}>
+	<div class="club-container faq-layout">
+		<header class="club-section__header">
+			{node.headline && <h2>{node.headline}</h2>}
+			{node.subheadline && <p>{node.subheadline}</p>}
+		</header>
+		<div class="faq-list">
+			{items.map((item, index) => (
+				<details class="faq-item" name={groupName} open={index === 0}>
+					<summary><span>{item.question}</span><span class="faq-symbol" aria-hidden="true"></span></summary>
+					<p>{item.answer}</p>
+				</details>
+			))}
+		</div>
+	</div>
+</section>
+
+<script>
+	document.querySelectorAll<HTMLElement>(".faq-list").forEach((list) => {
+		const items = [...list.querySelectorAll<HTMLDetailsElement>(".faq-item")];
+
+		items.forEach((item) => {
+			item.addEventListener("toggle", () => {
+				if (!item.open) return;
+
+				items.forEach((otherItem) => {
+					if (otherItem !== item) otherItem.open = false;
+				});
+			});
+		});
+	});
+</script>
+
+<style>
+	.faq-section { background: var(--color-paper-2); }
+	.faq-layout { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 4rem; }
+	.faq-layout h2 { font-size: clamp(1.75rem, 3.3vw, 3rem); }
+	.faq-list { border-top: 1px solid var(--color-rule); }
+	.faq-item { border-bottom: 1px solid var(--color-rule); }
+	.faq-item summary { display: grid; grid-template-columns: minmax(0, 1fr) 1rem; align-items: center; gap: 1rem; padding-block: 1.5rem; cursor: pointer; list-style: none; font-weight: 700; line-height: 1.7; }
+	.faq-item summary::-webkit-details-marker { display: none; }
+	.faq-symbol::before { content: "+"; font-size: 1.25rem; color: var(--color-accent); }
+	.faq-item[open] .faq-symbol::before { content: "−"; }
+	.faq-item p { padding: 0 2rem 1.75rem 0; color: var(--color-muted); font-size: .9375rem; line-height: 1.95; }
+	.faq-item summary:hover { color: var(--color-accent); }
+	@media (max-width: 60rem) { .faq-layout { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+</style>

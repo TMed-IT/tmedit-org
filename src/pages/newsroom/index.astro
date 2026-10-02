@@ -1,0 +1,280 @@
+---
+import { getEmDashCollection } from "emdash";
+import Base from "../../layouts/Base.astro";
+import { disableSharedCache, isCampusRequest } from "../../lib/campus-access";
+
+const { entries: news, error, cacheHint } = await getEmDashCollection("news", {
+	status: "published",
+	orderBy: { published_at: "desc" },
+});
+
+if (error) throw error;
+Astro.cache.set(cacheHint);
+
+const campusRequest = await isCampusRequest(Astro.cookies);
+const visibleNews = campusRequest ? news : news.filter((item) => !item.data.campus_only);
+disableSharedCache(Astro.cache, Astro.response.headers);
+const subscriptionStatus = Astro.url.searchParams.get("subscription");
+const subscriptionMessage: Record<string, string> = {
+	pending: "確認メールを送信しました。在籍確認を済ませたブラウザでリンクを開いて登録を確定してください。登録済みの場合は変更ありません。",
+	active: "メール購読を開始しました。新しいお知らせの公開時にお届けします。",
+	removed: "メール配信を停止しました。",
+	invalid: "入力またはリンクを確認して、もう一度お試しください。",
+	error: "登録処理に失敗しました。時間をおいてもう一度お試しください。",
+};
+
+const formatDate = (date: Date) =>
+	new Intl.DateTimeFormat("ja-JP", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		timeZone: "Asia/Tokyo",
+	}).format(date);
+---
+
+<Base
+	title="お知らせ"
+	description="東邦大学医学部 IT部からの活動情報や更新のお知らせです。"
+>
+	<header class="newsroom-hero">
+		<div class="container">
+			<p class="newsroom-hero__label">NEWSROOM · IT CLUB</p>
+			<h1>お知らせ</h1>
+			<p class="newsroom-hero__lead">活動情報やプロジェクトの更新を、新しい順に掲載します。</p>
+			{subscriptionStatus && subscriptionMessage[subscriptionStatus] && (
+				<p class="newsroom-subscription__message" role="status">{subscriptionMessage[subscriptionStatus]}</p>
+			)}
+		</div>
+	</header>
+
+	<section class="newsroom-section" aria-labelledby="newsroom-list-title">
+		<div class="container">
+			<div class="newsroom-heading">
+				<h2 id="newsroom-list-title">最新情報</h2>
+				<p>{visibleNews.length}件</p>
+			</div>
+
+			{visibleNews.length === 0 ? (
+				<div class="newsroom-empty">
+					<p class="newsroom-empty__label">NO UPDATES YET</p>
+					<p>現在、公開中のお知らせはありません。</p>
+				</div>
+			) : (
+				<div class="newsroom-list">
+					{visibleNews.map((item, index) => (
+						<a class="newsroom-item" href={`/newsroom/${item.id}`}>
+							<span class="newsroom-item__number" aria-hidden="true">
+								{String(index + 1).padStart(2, "0")}
+							</span>
+							<div class="newsroom-item__content">
+								{item.data.publishedAt && (
+									<time datetime={item.data.publishedAt.toISOString()}>
+										{formatDate(item.data.publishedAt)}
+									</time>
+								)}
+								<div class="newsroom-item__title">
+									<h3 {...item.edit.title}>{item.data.title}</h3>
+									{item.data.campus_only && <span>学内限定</span>}
+								</div>
+								{item.data.excerpt && <p {...item.edit.excerpt}>{item.data.excerpt}</p>}
+							</div>
+							<span class="newsroom-item__arrow" aria-hidden="true">↗</span>
+						</a>
+					))}
+				</div>
+			)}
+		</div>
+	</section>
+
+	<section class="newsroom-subscription" aria-labelledby="subscription-title">
+		<div class="container newsroom-subscription__inner">
+			<div>
+				<p class="newsroom-hero__label">EMAIL UPDATES</p>
+				<h2 id="subscription-title">お知らせをメールで受け取る</h2>
+				<p>新しいお知らせの公開時にメールをお送りします。登録には大学のメールアドレスによる在籍確認が必要です。</p>
+			</div>
+			{campusRequest ? (
+				<form method="post" action="/api/subscribe" class="newsroom-subscription__form">
+					<label for="subscription-email">メールアドレス</label>
+					<div class="newsroom-subscription__fields">
+						<input id="subscription-email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required maxlength="254" />
+						<button type="submit">購読する <span aria-hidden="true">↗</span></button>
+					</div>
+					<label class="newsroom-subscription__consent"><input type="checkbox" name="consent" required /> お知らせメールの配信と、<a href="/privacy">プライバシーポリシー</a>に同意します。</label>
+					<div class="newsroom-subscription__trap" aria-hidden="true"><label for="subscription-website">Webサイト</label><input id="subscription-website" name="website" tabindex="-1" autocomplete="off" /></div>
+					<p>在籍確認を済ませたブラウザで確認メールのリンクを開くと登録が完了します。配信停止は各メールからいつでも可能です。</p>
+				</form>
+			) : (
+				<p class="newsroom-subscription__outside"><a href="/auth/verify/start?returnTo=%2Fnewsroom">大学のメールアドレスで在籍確認する</a></p>
+			)}
+		</div>
+	</section>
+</Base>
+
+<style>
+	.newsroom-hero {
+		padding-block: clamp(9rem, 18vw, 14rem) clamp(4rem, 9vw, 7rem);
+		border-bottom: var(--rule-hair) solid var(--color-rule);
+	}
+
+	.newsroom-hero__label,
+	.newsroom-empty__label {
+		color: var(--color-accent);
+		font-family: var(--font-outlier);
+		font-size: var(--text-xs);
+		font-weight: 600;
+		letter-spacing: var(--tracking-label);
+	}
+
+	.newsroom-hero h1 {
+		margin-top: var(--space-md);
+		font-size: clamp(3.75rem, 11vw, 8.5rem);
+		font-weight: 700;
+		line-height: 0.94;
+		letter-spacing: var(--tracking-display);
+	}
+
+	.newsroom-hero__lead {
+		max-width: 42rem;
+		margin-top: var(--space-lg);
+		color: var(--color-ink-2);
+		font-size: clamp(var(--text-md), 2.2vw, var(--text-lg));
+	}
+	.newsroom-subscription__message { max-width: 48rem; margin-top: 2rem; padding: 1rem 1.25rem; color: var(--color-ink); background: var(--color-paper-3); border-left: 2px solid var(--color-accent); }
+	.newsroom-subscription { padding-block: clamp(4rem, 8vw, 7rem); background: var(--color-paper-2); border-top: 1px solid var(--color-rule); }
+	.newsroom-subscription__inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); }
+	.newsroom-subscription h2 { margin-block: 1rem; font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1.25; }
+	.newsroom-subscription p { color: var(--color-ink-2); }
+	.newsroom-subscription__form { display: grid; align-content: start; gap: 1rem; }
+	.newsroom-subscription__form > label:first-child { font-size: var(--text-sm); font-weight: 700; }
+	.newsroom-subscription__fields { display: flex; gap: .6rem; }
+	.newsroom-subscription__fields input { min-width: 0; flex: 1; min-height: 3.25rem; padding: .75rem 1rem; color: var(--color-ink); background: var(--color-paper); border: 1px solid var(--color-rule); border-radius: .25rem; font: inherit; }
+	.newsroom-subscription__fields button { min-height: 3.25rem; padding: .75rem 1.25rem; color: var(--color-button-text); background: var(--color-button-primary); border: 1px solid var(--color-button-primary); border-radius: .25rem; font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+	.newsroom-subscription__fields button:hover { background: var(--color-button-primary-hover); }
+	.newsroom-subscription__fields button span { margin-left: .3rem; }
+	.newsroom-subscription__consent { display: flex; align-items: start; gap: .5rem; font-size: var(--text-sm); line-height: 1.6; }
+	.newsroom-subscription__consent input { margin-top: .35rem; accent-color: var(--color-accent); }
+	.newsroom-subscription__consent a { color: var(--color-accent); text-decoration: underline; text-underline-offset: .2em; }
+	.newsroom-subscription__form > p, .newsroom-subscription__outside { font-size: var(--text-sm); }
+	.newsroom-subscription__trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+	.newsroom-subscription input:focus-visible, .newsroom-subscription button:focus-visible, .newsroom-subscription a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+
+	.newsroom-section {
+		padding-block: clamp(4rem, 9vw, 7rem);
+	}
+
+	.newsroom-heading {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-md);
+		padding-bottom: var(--space-md);
+		border-bottom: var(--rule-hair) solid var(--color-rule);
+	}
+
+	.newsroom-heading h2 {
+		font-size: clamp(var(--text-xl), 4vw, var(--text-2xl));
+		font-weight: 700;
+		letter-spacing: -0.035em;
+	}
+
+	.newsroom-heading p {
+		color: var(--color-muted);
+		font-family: var(--font-outlier);
+		font-size: var(--text-xs);
+		letter-spacing: 0.08em;
+	}
+
+	.newsroom-list {
+		display: grid;
+	}
+
+	.newsroom-item {
+		display: grid;
+		grid-template-columns: 3rem minmax(0, 1fr) auto;
+		gap: clamp(var(--space-sm), 3vw, var(--space-lg));
+		align-items: start;
+		padding-block: clamp(var(--space-lg), 4vw, var(--space-xl));
+		border-bottom: var(--rule-hair) solid var(--color-rule);
+		transition: color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+	}
+
+	.newsroom-item__number,
+	.newsroom-item time {
+		color: var(--color-muted);
+		font-family: var(--font-outlier);
+		font-size: var(--text-xs);
+		letter-spacing: 0.08em;
+	}
+
+	.newsroom-item__content {
+		display: grid;
+		gap: var(--space-xs);
+	}
+
+	.newsroom-item__title {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-sm);
+		align-items: center;
+	}
+
+	.newsroom-item__title span {
+		padding: 0.25rem 0.5rem;
+		color: var(--color-accent);
+		border: var(--rule-hair) solid currentColor;
+		border-radius: var(--radius-full);
+		font-family: var(--font-outlier);
+		font-size: var(--text-xs);
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		white-space: nowrap;
+	}
+
+	.newsroom-item h3 {
+		max-width: 32ch;
+		font-size: clamp(var(--text-lg), 3vw, var(--text-2xl));
+		font-weight: 700;
+		line-height: var(--leading-heading);
+		letter-spacing: -0.035em;
+	}
+
+	.newsroom-item__content > p {
+		max-width: 62ch;
+		color: var(--color-ink-2);
+	}
+
+	.newsroom-item__arrow {
+		color: var(--color-accent);
+		font-size: var(--text-lg);
+		line-height: 1;
+		transition: transform var(--dur-short) var(--ease-out);
+	}
+
+	.newsroom-empty {
+		display: grid;
+		min-height: 18rem;
+		place-content: center;
+		gap: var(--space-sm);
+		text-align: center;
+		border-bottom: var(--rule-hair) solid var(--color-rule);
+	}
+
+	.newsroom-empty > p:last-child { color: var(--color-ink-2); }
+
+	@media (hover: hover) and (pointer: fine) {
+		.newsroom-item:hover {
+			color: var(--color-accent);
+			background: var(--color-paper-2);
+		}
+		.newsroom-item:hover .newsroom-item__arrow { transform: translate(0.2rem, -0.2rem); }
+		.newsroom-item:hover .newsroom-item__content > p { color: var(--color-ink); }
+	}
+
+	@media (max-width: 40rem) {
+		.newsroom-item { grid-template-columns: minmax(0, 1fr) auto; }
+		.newsroom-item__number { display: none; }
+		.newsroom-subscription__inner { grid-template-columns: 1fr; }
+		.newsroom-subscription__fields { flex-direction: column; }
+	}
+</style>

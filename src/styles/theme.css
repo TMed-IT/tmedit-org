@@ -1,0 +1,136 @@
+/* Hallmark · genre: atmospheric · macrostructure: Typographic Hero + Catalogue · design-system: design.md · designed-as-app */
+@import "../../tokens.css";
+
+:root {
+	color-scheme: dark;
+	/* Club palette */
+	--color-paper: #090b1c;
+	--color-background-secondary: #171a3c;
+	--color-paper-2: #121630;
+	--color-paper-3: #1b2043;
+	--color-ink: #f7f7fb;
+	--color-ink-2: #a7abc3;
+	--color-muted: #a7abc3;
+	--color-rule: #30365e;
+	--color-rule-2: #30365e;
+	--color-accent: #a5b4fc;
+	--color-accent-2: #6366f1;
+	--color-accent-ink: #ffffff;
+	--color-accent-soft: #1b2043;
+	--color-accent-dim: #6366f1;
+	--color-focus: #a5b4fc;
+	--color-focus-on-accent: #ffffff;
+	--color-error: #fca5a5;
+	--color-warning: #fcd34d;
+	--color-button-primary: #5457d6;
+	--color-button-primary-hover: #494cc4;
+	--color-button-primary-active: #4144b5;
+	--color-button-text: var(--color-accent-ink);
+	--font-display: var(--font-body), "Hiragino Kaku Gothic ProN", sans-serif;
+	--page-max: 82rem;
+	--page-gutter: clamp(1.25rem, 5vw, 4.5rem);
+	--color-bg: var(--color-paper);
+	--color-text: var(--color-ink);
+	--color-border: var(--color-rule);
+	--color-surface: var(--color-paper-2);
+	--color-brand: var(--color-accent);
+	--color-brand-strong: var(--color-accent-2);
+	--color-brand-soft: var(--color-accent);
+	--color-brand-pale: var(--color-paper-3);
+	--color-on-brand: var(--color-accent-ink);
+	--color-brand-ring: var(--color-focus);
+	--color-success: #86efac;
+	--color-danger: var(--color-error);
+	--gradient-brand: linear-gradient(105deg, var(--color-accent), var(--color-accent-2));
+	--gradient-brand-strong: linear-gradient(105deg, var(--color-accent-2), var(--color-accent));
+	--gradient-brand-soft: linear-gradient(105deg, var(--color-paper-3), var(--color-paper-2));
+	--gradient-headline: linear-gradient(105deg, var(--color-ink), var(--color-ink));
+	--font-heading: var(--font-display);
+	--font-weight-heading: 700;
+	--font-weight-display: 700;
+	--font-size-xs: var(--text-xs);
+	--font-size-sm: var(--text-sm);
+	--font-size-base: var(--text-base);
+	--font-size-lg: var(--text-md);
+	--font-size-xl: var(--text-lg);
+	--font-size-2xl: var(--text-xl);
+	--font-size-3xl: var(--text-2xl);
+	--font-size-4xl: var(--text-3xl);
+	--font-size-5xl: var(--text-4xl);
+	--font-size-6xl: var(--text-display-s);
+	--leading-tight: var(--leading-display);
+	--leading-snug: var(--leading-heading);
+	--leading-normal: var(--leading-body);
+	--leading-relaxed: var(--leading-body);
+	--tracking-tight: var(--tracking-display);
+	--tracking-snug: -0.025em;
+	--spacing-xs: var(--space-3xs);
+	--spacing-sm: var(--space-2xs);
+	--spacing-md: var(--space-sm);
+	--spacing-lg: var(--space-md);
+	--spacing-xl: var(--space-lg);
+	--spacing-2xl: var(--space-xl);
+	--spacing-3xl: var(--space-2xl);
+	--spacing-4xl: var(--space-3xl);
+	--spacing-5xl: var(--space-4xl);
+	--max-width: 48rem;
+	--wide-width: var(--page-max);
+	--radius-sm: var(--radius-pill);
+	--radius: var(--radius-card);
+	--radius-lg: var(--radius-card);
+	--radius-full: var(--radius-pill);
+	--transition-fast: var(--dur-micro) var(--ease-out);
+	--transition-base: var(--dur-short) var(--ease-out);
+	--transition-slow: var(--dur-long) var(--ease-out);
+	--shadow-sm: var(--shadow-card);
+	--shadow: var(--shadow-card);
+	--shadow-lg: var(--shadow-card);
+	--shadow-xl: var(--shadow-card);
+}
+
+/* Keep shared chrome in this override file rather than modifying Base.astro. */
+:root.has-loading-screen { overflow: hidden; }
+:root .site-loader { position: fixed; inset: 0; z-index: var(--z-modal); display: grid; place-content: center; justify-items: center; gap: 1.25rem; background: var(--color-paper); color: var(--color-muted); opacity: 1; visibility: visible; transition: opacity var(--dur-long) var(--ease-out), visibility var(--dur-long) var(--ease-out); }
+:root .site-loader img { width: clamp(6rem, 12vw, 10rem); height: auto; filter: invert(85%) sepia(19%) saturate(688%) hue-rotate(192deg) brightness(103%); }
+:root .site-loader span { font: 600 .6875rem var(--font-outlier); letter-spacing: .24em; }
+:root .site-loader.is-complete { opacity: 0; visibility: hidden; pointer-events: none; }
+:root .site-header { background: var(--color-paper); border-bottom-color: var(--color-rule); }
+:root .site-brand__mark { width: 2.5rem; height: 2.5rem; object-fit: contain; }
+:root .site-brand__name { font-weight: 700; }
+:root .site-nav a { font-size: .8125rem; }
+:root .site-nav a:hover, :root .site-footer__nav a:hover { color: var(--color-accent); text-decoration: underline; text-underline-offset: .35em; }
+:root .btn { border-radius: .25rem; font-weight: 700; }
+:root .btn-primary { background: var(--color-button-primary); color: var(--color-button-text); border-color: var(--color-button-primary); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-ink) 12%, transparent); }
+:root .btn-primary:hover { background: var(--color-button-primary-hover); color: var(--color-button-text); border-color: var(--color-button-primary-hover); }
+:root .btn-primary:active { background: var(--color-button-primary-active); border-color: var(--color-button-primary-active); }
+:root .btn-secondary { background: var(--color-paper-3); color: var(--color-ink); border-color: var(--color-accent); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-accent) 8%, transparent); }
+:root .btn-secondary:hover { background: var(--color-background-secondary); color: var(--color-ink); border-color: var(--color-ink); }
+:root .btn:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+:root .club-section { padding-block: clamp(4rem, 8vw, 7rem); }
+:root .club-section__header { gap: 1rem; margin-bottom: 2.75rem; }
+:root .club-section__header h2 { font-weight: 700; font-size: clamp(2rem, 3.6vw, 3.25rem); line-height: 1.4; letter-spacing: -.045em; }
+:root .club-section__header p { font-size: .9375rem; }
+:root .projects-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); border: 0; gap: 1rem; }
+:root .project { border: 1px solid var(--color-rule); min-height: 16rem; background: var(--color-paper-2); padding: 2rem; transition: background-color var(--dur-short) var(--ease-out); }
+:root .project--lead { grid-column: 1 / -1; min-height: 17rem; background: var(--color-paper-3); }
+:root .project h3 { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: 700; overflow-wrap: anywhere; }
+:root .project:hover { background: var(--color-paper-3); }
+:root .project > p { margin-top: 1rem; }
+:root .project__meta { margin-top: 2rem; gap: 1rem; }
+:root .projects-more a { border: 0; border-bottom: 1px solid var(--color-accent); padding-inline: 0; gap: 1.5rem; }
+:root .projects-more a:hover { background: transparent; color: var(--color-accent-2); }
+:root .site-footer { background: var(--color-background-secondary); padding-top: 4rem; }
+:root .site-footer__brand-lockup { display: flex; min-width: 0; align-items: center; gap: clamp(1rem, 2.5vw, 2rem); }
+:root .site-footer__brand-lockup img { width: clamp(3.5rem, 7vw, 5.5rem); height: auto; flex: 0 0 auto; }
+:root .site-footer__wordmark { font-weight: 700; font-size: clamp(3rem, 8vw, 6rem); letter-spacing: -.06em; }
+:root .site-footer__tagline { font-size: clamp(1.25rem, 2.5vw, 2rem); line-height: 1.7; font-weight: 500; }
+:root .site-footer__bottom { font-size: .65rem; letter-spacing: .08em; }
+@media (max-width: 40rem) {
+	:root .projects-grid { grid-template-columns: minmax(0, 1fr); }
+	:root .project, :root .project--lead { grid-column: auto; min-height: 15rem; padding: 1.5rem; }
+	:root .site-footer__inner { gap: 2.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+	:root .site-loader { display: none; }
+	:root.has-loading-screen { overflow: auto; }
+}

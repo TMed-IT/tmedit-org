@@ -1,0 +1,65 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="ページが見つかりません">
+	<div class="not-found">
+		<div class="not-found-code" aria-hidden="true">404</div>
+		<h1>ページが見つかりません</h1>
+		<p>URLが変更されたか、ページが削除された可能性があります。</p>
+		<div class="not-found-actions">
+			<a href="/" class="btn btn-primary btn-lg">ホームへ戻る <span aria-hidden="true">↗</span></a>
+			<a href="/contact" class="btn btn-secondary btn-lg">問い合わせる</a>
+		</div>
+	</div>
+</Base>
+
+<style>
+	.not-found {
+		min-height: 78svh;
+		display: grid;
+		align-content: center;
+		gap: var(--space-md);
+		padding: var(--space-4xl) var(--page-gutter) var(--space-3xl);
+		max-width: var(--page-max);
+		margin-inline: auto;
+	}
+
+	.not-found-code {
+		color: var(--color-accent);
+		font-family: var(--font-body);
+		font-size: var(--text-sm);
+		font-weight: 700;
+		letter-spacing: var(--tracking-label);
+	}
+
+	.not-found h1 {
+		max-width: 12ch;
+		font-size: var(--text-display-s);
+		line-height: var(--leading-display);
+		letter-spacing: var(--tracking-display);
+	}
+
+	.not-found p {
+		max-width: 42rem;
+		font-size: var(--text-md);
+		color: var(--color-muted);
+	}
+
+	.not-found-actions {
+		display: flex;
+		gap: var(--space-xs);
+		flex-wrap: wrap;
+		margin-top: var(--space-sm);
+	}
+
+	@media (max-width: 40rem) {
+		.not-found-actions {
+			flex-direction: column;
+		}
+
+		.not-found-actions .btn {
+			width: 100%;
+		}
+	}
+</style>

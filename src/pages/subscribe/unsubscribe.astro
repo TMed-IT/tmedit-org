@@ -1,0 +1,39 @@
+---
+import Base from "../../layouts/Base.astro";
+import { validToken } from "../../lib/news-subscriptions";
+
+Astro.cache.set(false);
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("Referrer-Policy", "no-referrer");
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+const token = Astro.url.searchParams.get("token");
+---
+
+<Base title="メール配信の停止">
+	<section class="subscription-action">
+		<p class="subscription-action__label">NEWSROOM / UNSUBSCRIBE</p>
+		<h1>メール配信の停止</h1>
+		{validToken(token) ? (
+			<>
+				<p>お知らせメールの配信を停止します。配信停止は学外からも可能です。</p>
+				<form method="post" action="/api/subscribe/unsubscribe">
+					<input type="hidden" name="token" value={token} />
+					<button type="submit">配信を停止する</button>
+				</form>
+			</>
+		) : <p>配信停止リンクが無効です。</p>}
+		<a href="/newsroom">お知らせ一覧へ戻る</a>
+	</section>
+</Base>
+
+<style>
+	.subscription-action { width: min(100% - 2.5rem, 40rem); margin-inline: auto; padding-block: clamp(10rem, 18vw, 14rem) 8rem; }
+	.subscription-action__label { color: var(--color-accent); font: 600 var(--text-xs) var(--font-outlier); letter-spacing: .12em; }
+	h1 { margin-block: 1.5rem; font-size: clamp(2.5rem, 7vw, 4rem); line-height: 1.1; }
+	p { color: var(--color-ink-2); }
+	form { margin-top: 2rem; }
+	button { min-height: 3rem; padding: .75rem 1.5rem; color: var(--color-button-text); background: var(--color-button-primary); border: 1px solid var(--color-button-primary); border-radius: .25rem; font: inherit; font-weight: 700; cursor: pointer; }
+	button:hover { background: var(--color-button-primary-hover); }
+	button:focus-visible, a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+	a { display: inline-block; margin-top: 2.5rem; color: var(--color-accent); text-decoration: underline; text-underline-offset: .3em; }
+</style>

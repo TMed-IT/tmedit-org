@@ -1,0 +1,52 @@
+---
+interface Activity {
+	title: string;
+	description: string;
+}
+
+interface Props {
+	node: {
+		_key?: string;
+		headline?: string;
+		subheadline?: string;
+		imageUrl?: string;
+		imageAlt?: string;
+		items?: Activity[];
+	};
+}
+
+const { node } = Astro.props;
+const items = node.items || [];
+---
+
+<section class="club-section" id={node._key || "activities"}>
+	<div class="club-container">
+		<header class="club-section__header reveal" data-reveal>
+			{node.headline && <h2>{node.headline}</h2>}
+			{node.subheadline && <p>{node.subheadline}</p>}
+		</header>
+
+		<div class="activities-grid">
+			{items.map((item) => (
+				<article class="activity-card reveal" data-reveal>
+					<div class="activity-card__copy">
+						<h3>{item.title}</h3>
+						<p>{item.description}</p>
+					</div>
+				</article>
+			))}
+		</div>
+	</div>
+</section>
+
+<style>
+	.activities-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--color-rule); }
+	.activity-card { padding: 2.25rem 2.5rem 2.75rem 0; border-bottom: 1px solid var(--color-rule); }
+	.activity-card:nth-child(even) { padding-left: 2.5rem; border-left: 1px solid var(--color-rule); }
+	.activity-card h3 { font-size: clamp(1.25rem, 2.2vw, 1.75rem); font-weight: 700; letter-spacing: -.035em; line-height: 1.5; }
+	.activity-card p { max-width: 32rem; margin-top: 1rem; color: var(--color-muted); font-size: .9375rem; line-height: 1.9; }
+	@media (max-width: 40rem) {
+		.activities-grid { grid-template-columns: minmax(0, 1fr); }
+		.activity-card, .activity-card:nth-child(even) { padding: 1.75rem 0 2rem; border-left: 0; }
+	}
+</style>

@@ -1,0 +1,440 @@
+---
+import { getMenu, getSiteSettings } from "emdash";
+import { EmDashBodyEnd, EmDashBodyStart, EmDashHead } from "emdash/ui";
+import { createPublicPageContext } from "emdash/page";
+import { Font } from "astro:assets";
+import siteTokensUrl from "../styles/tokens.css?url";
+import siteThemeUrl from "../styles/theme.css?url";
+
+interface Props {
+	title?: string;
+	description?: string;
+	image?: string;
+	content?: { collection: string; id: string; slug?: string | null };
+}
+
+const { title, description, image, content } = Astro.props;
+const settings = await getSiteSettings();
+const siteTitle = settings?.title || "IT部";
+const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
+const siteDescription = settings?.tagline || "プログラミングやWeb開発を、仲間と一緒に試しながら学ぶ学生コミュニティです。";
+const [primaryMenu, footerProduct, footerCompany, footerSupport] = await Promise.all([
+	getMenu("primary"),
+	getMenu("footer_product"),
+	getMenu("footer_company"),
+	getMenu("footer_support"),
+]);
+
+const footerItems = [footerProduct, footerCompany, footerSupport].flatMap((menu) => menu?.items || []);
+const publicFooterItems = footerItems.filter((item) => item.label !== "管理画面" && item.url !== "/login" && !item.url.startsWith("/_emdash/"));
+const internalLoginUrl = "/_emdash/api/auth/internal/authorize";
+const authErrorMessages: Record<string, string> = {
+	not_configured: "認証設定を確認できませんでした。管理者にお問い合わせください。",
+	authorization_failed: "認証を開始できませんでした。認証サーバーの設定または接続状態を確認してください。",
+	invalid_callback: "認証サーバーから必要な情報を受け取れませんでした。もう一度お試しください。",
+	invalid_state: "認証セッションが期限切れか、無効になっています。もう一度お試しください。",
+	token_exchange_failed: "認証情報を確認できませんでした。もう一度お試しください。",
+	invalid_user: "認証済みユーザーの情報を確認できませんでした。管理者にお問い合わせください。",
+	account_disabled: "このアカウントは無効になっています。管理者にお問い合わせください。",
+	internal_callback_failed: "認証処理を完了できませんでした。時間をおいてもう一度お試しください。",
+};
+const requestedAuthError = Astro.url.searchParams.get("auth_error");
+const authErrorCode = requestedAuthError && /^[a-z0-9_]{1,64}$/.test(requestedAuthError)
+	? requestedAuthError
+	: requestedAuthError ? "unknown_error" : null;
+const authErrorMessage = authErrorCode
+	? authErrorMessages[authErrorCode] || "認証中にエラーが発生しました。もう一度お試しください。"
+	: null;
+
+const pageCtx = createPublicPageContext({
+	Astro,
+	kind: content ? "content" : "custom",
+	pageType: "website",
+	title: fullTitle,
+	pageTitle: title || siteTitle,
+	description: description || siteDescription,
+	canonical: Astro.url.href,
+	image,
+	seo: { ogImage: image },
+	siteName: siteTitle,
+	content,
+});
+---
+
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+		<title>{fullTitle}</title>
+		<meta name="description" content={description || siteDescription} />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="stylesheet" href={siteTokensUrl} />
+		<link rel="stylesheet" href={siteThemeUrl} />
+		<script is:inline>document.documentElement.classList.add("has-loading-screen");</script>
+		<EmDashHead page={pageCtx} />
+		<Font cssVariable="--font-body" preload />
+		<Font cssVariable="--font-outlier" />
+	</head>
+	<body>
+		<EmDashBodyStart page={pageCtx} />
+			<div class="site-loader" data-site-loader role="status" aria-live="polite" aria-label="ページを読み込んでいます">
+				<img src="/loading.svg" alt="" width="160" height="160" />
+				<span>LOADING</span>
+			</div>
+			{authErrorMessage && authErrorCode && (
+				<aside class="auth-toast" data-auth-toast role="alert" aria-live="assertive" aria-atomic="true">
+					<span class="auth-toast__mark" aria-hidden="true">!</span>
+					<div class="auth-toast__body">
+						<p class="auth-toast__title">認証できませんでした</p>
+						<p class="auth-toast__message">{authErrorMessage}</p>
+						<div class="auth-toast__actions">
+							<a href={internalLoginUrl}>もう一度試す</a>
+							<code>{authErrorCode}</code>
+						</div>
+					</div>
+					<button type="button" class="auth-toast__close" data-auth-toast-close aria-label="通知を閉じる">×</button>
+				</aside>
+			)}
+			<a href="#main-content" class="skip-link">本文へ移動</a>
+
+		<header class="site-header" data-site-header>
+			<div class="site-header__inner">
+				<a href="/" class="site-brand" aria-label={`${siteTitle} トップページ`}>
+					<img class="site-brand__mark" src="/icon-fill.svg" alt="" width="40" height="40" />
+					<span class="site-brand__name">{siteTitle}</span>
+				</a>
+
+				<nav class="site-nav" aria-label="メインナビゲーション">
+					{primaryMenu?.items.map((item) => (
+						<a href={item.url} target={item.target}>{item.label}</a>
+					))}
+				</nav>
+
+				<div class="site-header__actions">
+					<button type="button" class="menu-toggle" aria-label="メニューを開く" aria-expanded="false" aria-controls="mobile-navigation">
+						<span></span><span></span>
+					</button>
+				</div>
+			</div>
+		</header>
+
+		<div class="mobile-navigation" id="mobile-navigation" aria-hidden="true" inert>
+			<p class="mobile-navigation__label">NAVIGATION</p>
+			<nav aria-label="モバイルナビゲーション">
+				{primaryMenu?.items.map((item) => (
+					<a href={item.url} target={item.target}>{item.label}<span aria-hidden="true">↗</span></a>
+					))}
+				</nav>
+			</div>
+
+		<main id="main-content" class="site-surface">
+			<slot />
+		</main>
+
+		<footer class="site-footer">
+			<div class="club-container site-footer__inner">
+				<div class="site-footer__mast">
+					<div class="site-footer__brand-lockup">
+						<img src="/icon-fill.svg" alt="" width="80" height="80" />
+						<p class="site-footer__wordmark">IT部</p>
+					</div>
+					<p class="site-footer__tagline">学びたい気持ちを、<br />動くものに変える。</p>
+				</div>
+				{publicFooterItems.length > 0 && (
+					<nav class="site-footer__nav" aria-label="フッターナビゲーション">
+						{publicFooterItems.map((item) => (
+							<a href={item.url} target={item.target} rel={item.target ? "noopener noreferrer" : undefined}>{item.label}</a>
+						))}
+					</nav>
+				)}
+				<div class="site-footer__utility">
+					<a href={internalLoginUrl} class="site-footer__admin">管理画面 <span aria-hidden="true">↗</span></a>
+				</div>
+				<div class="site-footer__bottom">
+					<p>© {new Date().getFullYear()} TOHO UNIVERSITY MEDICAL IT CLUB</p>
+					<p>TOKYO · JAPAN</p>
+				</div>
+			</div>
+		</footer>
+
+		<EmDashBodyEnd page={pageCtx} />
+
+		<script>
+			const loader = document.querySelector<HTMLElement>("[data-site-loader]");
+			const closeLoader = () => {
+				loader?.classList.add("is-complete");
+				document.documentElement.classList.remove("has-loading-screen");
+				window.setTimeout(() => loader?.remove(), 420);
+			};
+				if (document.readyState === "complete") closeLoader();
+				else window.addEventListener("load", closeLoader, { once: true });
+
+				const authToast = document.querySelector<HTMLElement>("[data-auth-toast]");
+				const authToastClose = document.querySelector<HTMLButtonElement>("[data-auth-toast-close]");
+				const dismissAuthToast = () => {
+					if (!authToast || authToast.classList.contains("is-closing")) return;
+					authToast.classList.add("is-closing");
+					window.setTimeout(() => authToast.remove(), 220);
+				};
+				authToastClose?.addEventListener("click", dismissAuthToast);
+				if (authToast) {
+					const cleanUrl = new URL(window.location.href);
+					cleanUrl.searchParams.delete("auth_error");
+					window.history.replaceState(window.history.state, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+				}
+
+				const menuToggle = document.querySelector<HTMLButtonElement>(".menu-toggle");
+			const mobileNavigation = document.querySelector<HTMLElement>(".mobile-navigation");
+			const siteHeader = document.querySelector<HTMLElement>("[data-site-header]");
+
+			const setMenuOpen = (open: boolean) => {
+				if (!menuToggle || !mobileNavigation) return;
+				menuToggle.setAttribute("aria-expanded", String(open));
+				menuToggle.setAttribute("aria-label", open ? "メニューを閉じる" : "メニューを開く");
+				mobileNavigation.classList.toggle("is-open", open);
+				mobileNavigation.setAttribute("aria-hidden", String(!open));
+				mobileNavigation.toggleAttribute("inert", !open);
+				document.body.classList.toggle("menu-open", open);
+			};
+
+			menuToggle?.addEventListener("click", () => setMenuOpen(menuToggle.getAttribute("aria-expanded") !== "true"));
+			mobileNavigation?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenuOpen(false)));
+				document.addEventListener("keydown", (event) => {
+					if (event.key === "Escape") {
+						setMenuOpen(false);
+						dismissAuthToast();
+					}
+				});
+
+			let ticking = false;
+			const updateHeader = () => {
+				siteHeader?.classList.toggle("is-scrolled", window.scrollY > 24);
+				ticking = false;
+			};
+			window.addEventListener("scroll", () => {
+				if (ticking) return;
+				ticking = true;
+				requestAnimationFrame(updateHeader);
+			}, { passive: true });
+			updateHeader();
+
+		</script>
+	</body>
+</html>
+
+<style is:inline>
+	@layer base;
+
+	@layer base {
+		*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+		html,
+		body { overflow-x: clip; }
+
+		html {
+			color-scheme: dark;
+			scroll-behavior: smooth;
+			scroll-padding-top: 5rem;
+			background: var(--color-paper);
+		}
+
+		body {
+			min-height: 100dvh;
+			background: var(--color-paper);
+			color: var(--color-ink);
+			font-family: var(--font-body);
+			font-size: var(--text-base);
+			line-height: var(--leading-body);
+			-webkit-font-smoothing: antialiased;
+			text-rendering: optimizeLegibility;
+		}
+
+		body.menu-open { overflow: clip; }
+		a:where(:not([class*="emdash"]):not([class*="ec-"])) { color: currentColor; text-decoration: none; }
+		button, input, textarea, select { font: inherit; }
+		button, a { -webkit-tap-highlight-color: transparent; }
+		a:active { color: var(--color-accent); }
+		button:active { transform: translateY(1px); }
+		button:disabled, button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.5; }
+		button[data-state="loading"] { cursor: progress; }
+		button[data-state="error"] { color: var(--color-error); }
+		button[data-state="success"] { color: var(--color-accent); }
+		img { display: block; max-width: 100%; }
+		h1, h2, h3, h4, h5, h6 {
+			min-width: 0;
+			overflow-wrap: anywhere;
+			font-family: var(--font-display);
+			font-style: normal;
+			font-weight: 400;
+			text-wrap: balance;
+		}
+		p { text-wrap: pretty; }
+		:focus-visible { outline: var(--rule-fine) solid var(--color-focus); outline-offset: var(--space-3xs); }
+	}
+
+	::selection { background: var(--color-accent); color: var(--color-accent-ink); }
+
+	.site-header,
+	.mobile-navigation,
+	.site-surface,
+	.site-footer { position: relative; z-index: var(--z-raised); }
+	.site-surface { isolation: isolate; background: var(--color-paper); }
+	.club-section,
+	.section {
+		background: color-mix(in oklch, var(--color-paper) 92%, transparent);
+	}
+
+	.club-container,
+	.container { width: 100%; max-width: var(--page-max); margin-inline: auto; padding-inline: var(--page-gutter); }
+
+	.club-section,
+	.section { position: relative; padding-block: clamp(var(--space-3xl), 12vw, var(--space-4xl)); border-top: var(--rule-hair) solid var(--color-rule); }
+
+	.club-section__header,
+	.section-header { display: grid; gap: var(--space-sm); max-width: 56rem; margin-bottom: clamp(var(--space-xl), 6vw, var(--space-2xl)); }
+
+	.club-section__header h2,
+	.section-headline { font-size: clamp(2.25rem, 6vw, 4.75rem); line-height: var(--leading-display); letter-spacing: var(--tracking-display); }
+
+	.club-section__header p,
+	.section-subheadline { max-width: 58ch; color: var(--color-muted); font-size: var(--text-md); line-height: var(--leading-body); }
+
+	.btn {
+		display: inline-flex;
+		min-width: 0;
+		min-height: 3rem;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-xs);
+		padding: var(--space-xs) var(--space-md);
+		border: var(--rule-hair) solid var(--color-rule-2);
+		border-radius: var(--radius-pill);
+		font-family: var(--font-body);
+		font-size: var(--text-sm);
+		font-weight: 700;
+		letter-spacing: 0.03em;
+		white-space: nowrap;
+		transition: transform var(--dur-micro) var(--ease-out), background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+	}
+
+	.btn-primary { background: var(--color-accent); color: var(--color-accent-ink); border-color: var(--color-accent); }
+	.btn-primary:focus-visible { outline-color: var(--color-focus-on-accent); }
+	.btn-secondary { background: var(--color-paper-2); color: var(--color-ink); border-color: var(--color-rule-2); }
+	.btn:active { transform: translateY(1px); }
+	.btn[aria-disabled="true"], .btn:disabled { cursor: not-allowed; opacity: 0.5; }
+	.btn[data-state="loading"] { cursor: progress; }
+	.btn[data-state="error"] { border-color: var(--color-error); }
+	.btn[data-state="success"] { border-color: var(--color-accent); }
+
+	.icon-tile { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; color: var(--color-accent); border: var(--rule-hair) solid var(--color-rule-2); }
+	.reveal { opacity: 1; transform: none; }
+	.club-hero .reveal { animation: hero-reveal var(--dur-long) var(--ease-out) both; }
+	.club-hero .reveal[data-reveal-delay="120"] { animation-delay: var(--dur-micro); }
+
+	@keyframes hero-reveal { from { opacity: 0; } to { opacity: 1; } }
+
+	.skip-link { position: fixed; inset-block-start: var(--space-xs); inset-inline-start: var(--space-xs); z-index: var(--z-tooltip); transform: translateY(-180%); padding: var(--space-xs) var(--space-sm); background: var(--color-accent); color: var(--color-accent-ink); font-weight: 700; transition: transform var(--dur-short) var(--ease-out); }
+	.skip-link:focus { transform: none; }
+
+	.auth-toast {
+		position: fixed;
+		inset-block-start: calc(4.5rem + var(--space-md));
+		inset-inline-end: var(--page-gutter);
+		z-index: var(--z-toast);
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		width: min(30rem, calc(100% - 2 * var(--page-gutter)));
+		gap: var(--space-sm);
+		align-items: start;
+		padding: var(--space-md);
+		background: var(--color-paper-3);
+		color: var(--color-ink);
+		border: var(--rule-hair) solid var(--color-error);
+		animation: auth-toast-enter var(--dur-long) var(--ease-out) both;
+		transition: opacity var(--dur-short) var(--ease-in), transform var(--dur-short) var(--ease-in);
+	}
+	.auth-toast.is-closing { opacity: 0; transform: translateY(calc(var(--space-xs) * -1)); }
+	.auth-toast__mark { display: grid; width: 2rem; height: 2rem; place-items: center; background: var(--color-error); color: var(--color-paper); font-weight: 900; line-height: 1; }
+	.auth-toast__body { min-width: 0; }
+	.auth-toast__title { font-weight: 700; line-height: var(--leading-heading); }
+	.auth-toast__message { margin-top: var(--space-2xs); color: var(--color-ink-2); font-size: var(--text-sm); line-height: var(--leading-body); }
+	.auth-toast__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm); margin-top: var(--space-sm); }
+	.auth-toast__actions a { color: var(--color-accent); font-size: var(--text-sm); font-weight: 700; text-decoration: underline; text-underline-offset: var(--space-3xs); white-space: nowrap; }
+	.auth-toast__actions code { color: var(--color-muted); font-family: var(--font-outlier); font-size: var(--text-xs); overflow-wrap: anywhere; }
+	.auth-toast__close { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; background: transparent; color: var(--color-muted); border: 0; cursor: pointer; font-size: var(--text-lg); line-height: 1; }
+
+	@keyframes auth-toast-enter {
+		from { opacity: 0; transform: translateY(calc(var(--space-xs) * -1)); }
+		to { opacity: 1; transform: none; }
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.btn:hover { transform: translateY(-1px); }
+		.btn-primary:hover { background: var(--color-accent-2); }
+		.btn-secondary:hover { background: var(--color-paper-3); }
+		.auth-toast__close:hover { color: var(--color-ink); }
+	}
+
+	@media (pointer: coarse) {
+		.btn, button, .site-nav a, .site-footer__nav a { min-height: 2.75rem; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		html { scroll-behavior: auto; }
+		*, *::before, *::after { animation-duration: 150ms !important; animation-iteration-count: 1 !important; transition-duration: 150ms !important; }
+		.club-hero .reveal { animation: none; }
+		.auth-toast { animation-name: auth-toast-fade; }
+	}
+
+	@keyframes auth-toast-fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+
+<style is:inline>
+	.site-header { position: fixed; inset: 0 0 auto; z-index: var(--z-sticky); border-bottom: var(--rule-hair) solid transparent; transition: background-color var(--dur-short) var(--ease-out); }
+	.site-header.is-scrolled { background: var(--color-paper); border-bottom-color: var(--color-rule); }
+	.site-header__inner { width: 100%; max-width: var(--page-max); min-height: 4.5rem; margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-md); padding-inline: var(--page-gutter); }
+	.site-brand { display: inline-flex; min-width: 0; align-items: center; gap: var(--space-xs); justify-self: start; }
+	.site-brand__mark { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; background: var(--color-accent); color: var(--color-accent-ink); font-family: var(--font-body); font-size: var(--text-xs); font-weight: 700; }
+	.site-brand__name { overflow: hidden; font-family: var(--font-display); font-size: var(--text-md); line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+	.site-nav { display: flex; align-items: center; justify-content: center; gap: var(--space-2xs); }
+	.site-nav a { display: inline-flex; min-height: 2.75rem; align-items: center; padding-inline: var(--space-sm); color: var(--color-ink-2); font-family: var(--font-body); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; white-space: nowrap; }
+	.site-header__actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); }
+	.menu-toggle { display: none; width: 3rem; height: 3rem; place-items: center; gap: var(--space-2xs); background: var(--color-paper-2); color: var(--color-ink); border: var(--rule-hair) solid var(--color-rule-2); cursor: pointer; }
+	.menu-toggle span { display: block; width: 1.125rem; height: var(--rule-hair); background: currentColor; transition: transform var(--dur-short) var(--ease-in-out); }
+	.menu-toggle[aria-expanded="true"] span:first-child { transform: translateY(0.2rem) rotate(45deg); }
+	.menu-toggle[aria-expanded="true"] span:last-child { transform: translateY(-0.2rem) rotate(-45deg); }
+
+	.mobile-navigation { position: fixed; inset: 4.5rem 0 auto; z-index: var(--z-dropdown); display: grid; gap: var(--space-lg); padding: var(--space-lg) var(--page-gutter); background: var(--color-paper-2); color: var(--color-ink); border-bottom: var(--rule-hair) solid var(--color-rule); opacity: 0; pointer-events: none; transform: translateY(-0.75rem); transition: opacity var(--dur-short) var(--ease-out), transform var(--dur-short) var(--ease-out); }
+	.mobile-navigation.is-open { opacity: 1; pointer-events: auto; transform: none; }
+	.mobile-navigation__label { color: var(--color-accent); font-family: var(--font-body); font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-label); }
+	.mobile-navigation nav { display: grid; }
+	.mobile-navigation nav a { display: flex; min-height: 3.5rem; align-items: center; justify-content: space-between; border-bottom: var(--rule-hair) solid var(--color-rule); font-family: var(--font-display); font-size: var(--text-lg); white-space: nowrap; }
+
+	.site-footer { position: relative; padding-block: var(--space-3xl) var(--space-lg); background: var(--color-paper-2); color: var(--color-ink); border-top: var(--rule-hair) solid var(--color-rule); }
+	.site-footer__inner { display: grid; gap: var(--space-2xl); }
+	.site-footer__mast { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.55fr); gap: var(--space-xl); align-items: end; }
+	.site-footer__wordmark { font-family: var(--font-display); font-size: clamp(3.5rem, 12vw, 9rem); line-height: 0.95; letter-spacing: var(--tracking-display); }
+	.site-footer__tagline { color: var(--color-ink-2); font-size: var(--text-lg); font-weight: 500; line-height: 1.6; }
+	.site-footer__nav { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-lg); padding-block: var(--space-md); border-block: var(--rule-hair) solid var(--color-rule); }
+	.site-footer__nav a { display: inline-flex; min-height: 2.75rem; align-items: center; color: var(--color-ink-2); font-family: var(--font-body); font-size: var(--text-sm); font-weight: 700; white-space: nowrap; }
+	.site-footer__utility { display: flex; justify-content: flex-end; }
+	.site-footer__admin { display: inline-flex; min-height: 2.75rem; align-items: center; gap: var(--space-xs); color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; white-space: nowrap; }
+	.site-footer__bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-sm); color: var(--color-muted); font-family: var(--font-body); font-size: var(--text-xs); letter-spacing: 0.05em; }
+
+	@media (hover: hover) and (pointer: fine) {
+		.site-nav a:hover, .site-footer__nav a:hover, .site-footer__admin:hover { color: var(--color-accent); }
+	}
+
+	@media (max-width: 68rem) {
+		.site-nav { display: none; }
+		.site-header__inner { grid-template-columns: minmax(0, 1fr) auto; }
+		.menu-toggle { display: grid; }
+	}
+
+	@media (max-width: 40rem) {
+		.site-footer__mast { grid-template-columns: minmax(0, 1fr); }
+		.site-footer__wordmark { font-size: clamp(3rem, 19vw, 5.5rem); }
+		.site-footer__bottom { flex-direction: column; }
+	}
+</style>

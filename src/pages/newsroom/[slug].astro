@@ -1,0 +1,187 @@
+---
+import { verificationPath } from "../../lib/verify-client";
+import { decodeSlug, getEmDashEntry, getSeoMeta, getSiteSettings } from "emdash";
+import { PortableText } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
+import { disableSharedCache, isCampusRequest } from "../../lib/campus-access";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.redirect("/404");
+
+let articleResult;
+try {
+	articleResult = await getEmDashEntry("news", slug);
+} catch (cause) {
+	if (cause instanceof Error && cause.name === "LiveEntryNotFoundError") {
+		return Astro.redirect("/404");
+	}
+	throw cause;
+}
+
+const { entry: article, error, cacheHint } = articleResult;
+if (error) {
+	if (error instanceof Error && error.name === "LiveEntryNotFoundError") {
+		return Astro.redirect("/404");
+	}
+	throw error;
+}
+if (!article) return Astro.redirect("/404");
+
+Astro.cache.set(cacheHint);
+
+if (article.data.campus_only) {
+	disableSharedCache(Astro.cache, Astro.response.headers);
+	Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+	if (!(await isCampusRequest(Astro.cookies))) return Astro.redirect(verificationPath(Astro.url));
+}
+
+const settings = await getSiteSettings();
+const seo = getSeoMeta(article, {
+	siteTitle: settings?.title || "IT部",
+	siteUrl: Astro.url.origin,
+	path: `/newsroom/${slug}`,
+});
+
+const publishedLabel = article.data.publishedAt
+	? new Intl.DateTimeFormat("ja-JP", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		timeZone: "Asia/Tokyo",
+	}).format(article.data.publishedAt)
+	: null;
+---
+
+<Base
+	title={seo.title}
+	description={seo.description ?? undefined}
+	image={seo.ogImage ?? undefined}
+	content={{ collection: "news", id: article.data.id, slug }}
+>
+	<article class="news-article">
+		<header class="news-article__header">
+			<div class="news-article__measure">
+				<nav class="news-article__breadcrumbs" aria-label="パンくずリスト">
+					<a href="/">ホーム</a><span aria-hidden="true">/</span><a href="/newsroom">お知らせ</a>
+				</nav>
+				<p class="news-article__label">{article.data.campus_only ? "CAMPUS ONLY" : "NEWSROOM"}</p>
+				<h1 {...article.edit.title}>{article.data.title}</h1>
+				{publishedLabel && article.data.publishedAt && (
+					<time datetime={article.data.publishedAt.toISOString()}>{publishedLabel}</time>
+				)}
+				{article.data.excerpt && (
+					<p class="news-article__excerpt" {...article.edit.excerpt}>{article.data.excerpt}</p>
+				)}
+			</div>
+		</header>
+
+		<div class="news-article__body">
+			<div class="news-article__measure">
+				{article.data.content?.length ? (
+					<div class="news-article__prose" {...article.edit.content}>
+						<PortableText value={article.data.content} />
+					</div>
+				) : (
+					<p class="news-article__empty">本文はありません。</p>
+				)}
+
+				<a class="news-article__back" href="/newsroom">
+					<span aria-hidden="true">←</span> お知らせ一覧へ
+				</a>
+			</div>
+		</div>
+	</article>
+</Base>
+
+<style>
+	.news-article__header {
+		padding: clamp(8rem, 16vw, 12rem) var(--page-gutter) clamp(3rem, 7vw, 5rem);
+		border-bottom: var(--rule-hair) solid var(--color-rule);
+	}
+
+	.news-article__measure {
+		width: 100%;
+		max-width: 52rem;
+		margin-inline: auto;
+	}
+
+	.news-article__breadcrumbs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-xs);
+		margin-bottom: clamp(var(--space-xl), 6vw, var(--space-2xl));
+		color: var(--color-muted);
+		font-size: var(--text-xs);
+	}
+
+	.news-article__breadcrumbs a { text-decoration: underline; text-underline-offset: 0.3em; }
+
+	.news-article__label {
+		color: var(--color-accent);
+		font-family: var(--font-outlier);
+		font-size: var(--text-xs);
+		font-weight: 600;
+		letter-spacing: var(--tracking-label);
+	}
+
+	.news-article h1 {
+		margin-top: var(--space-md);
+		font-size: clamp(2.5rem, 7vw, 5.5rem);
+		font-weight: 700;
+		line-height: 1.05;
+		letter-spacing: var(--tracking-display);
+	}
+
+	.news-article time {
+		display: block;
+		margin-top: var(--space-lg);
+		color: var(--color-muted);
+		font-family: var(--font-outlier);
+		font-size: var(--text-xs);
+		letter-spacing: 0.08em;
+	}
+
+	.news-article__excerpt {
+		max-width: 60ch;
+		margin-top: var(--space-lg);
+		color: var(--color-ink-2);
+		font-size: var(--text-md);
+	}
+
+	.news-article__body {
+		padding: clamp(3rem, 8vw, 6rem) var(--page-gutter) clamp(5rem, 10vw, 8rem);
+	}
+
+	.news-article__prose {
+		font-size: clamp(1rem, 1.5vw, 1.075rem);
+		line-height: 1.9;
+	}
+
+	.news-article__prose :global(> * + *) { margin-top: 1.5em; }
+	.news-article__prose :global(h2) { margin-top: 2.5em; font-size: var(--text-2xl); font-weight: 700; line-height: var(--leading-heading); }
+	.news-article__prose :global(h3) { margin-top: 2em; font-size: var(--text-xl); font-weight: 700; line-height: var(--leading-heading); }
+	.news-article__prose :global(a) { color: var(--color-accent); text-decoration: underline; text-underline-offset: 0.25em; }
+	.news-article__prose :global(ul),
+	.news-article__prose :global(ol) { padding-left: 1.4em; }
+	.news-article__prose :global(blockquote) { padding-left: var(--space-md); color: var(--color-ink-2); border-left: 2px solid var(--color-accent); }
+
+	.news-article__empty { color: var(--color-muted); }
+
+	.news-article__back {
+		display: inline-flex;
+		min-height: 2.75rem;
+		align-items: center;
+		gap: var(--space-xs);
+		margin-top: clamp(var(--space-2xl), 8vw, var(--space-3xl));
+		padding-top: var(--space-sm);
+		color: var(--color-accent);
+		border-top: var(--rule-hair) solid var(--color-accent);
+		font-size: var(--text-sm);
+		font-weight: 700;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.news-article__breadcrumbs a:hover,
+		.news-article__back:hover { color: var(--color-ink); }
+	}
+</style>

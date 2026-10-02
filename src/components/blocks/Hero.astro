@@ -1,0 +1,57 @@
+---
+interface Props {
+	node: {
+		_key?: string;
+		kicker?: string;
+		headline: string;
+		subheadline?: string;
+		primaryCtaLabel?: string;
+		primaryCtaUrl?: string;
+		secondaryCtaLabel?: string;
+		secondaryCtaUrl?: string;
+		imageUrl?: string;
+		imageAlt?: string;
+		imageCaption?: string;
+		centered?: boolean;
+	};
+}
+
+const { node } = Astro.props;
+const primaryCta = node.primaryCtaLabel && node.primaryCtaUrl
+	? { label: node.primaryCtaLabel, url: node.primaryCtaUrl }
+	: null;
+const secondaryCta = node.secondaryCtaLabel && node.secondaryCtaUrl
+	? { label: node.secondaryCtaLabel, url: node.secondaryCtaUrl }
+	: null;
+---
+
+<section
+	id={node._key}
+	class:list={["club-hero", { "club-hero--centered": node.centered }]}
+>
+	<div class="club-hero__inner">
+		<div class="club-hero__copy reveal" data-reveal>
+			<h1>{node.headline}</h1>
+			{node.subheadline && <p class="club-hero__lead">{node.subheadline}</p>}
+			{(primaryCta || secondaryCta) && (
+				<div class="club-hero__actions">
+					{primaryCta && <a class="btn btn-primary" href={primaryCta.url}>{primaryCta.label}<span aria-hidden="true">↘</span></a>}
+					{secondaryCta && <a class="btn btn-secondary" href={secondaryCta.url}>{secondaryCta.label}<span aria-hidden="true">↗</span></a>}
+				</div>
+				)}
+		</div>
+	</div>
+</section>
+
+<style>
+	.club-hero { position: relative; padding: var(--space-3xl) var(--page-gutter) var(--space-4xl); background: var(--color-paper); border-bottom: var(--rule-hair) solid var(--color-rule); }
+	.club-hero__inner { width: 100%; max-width: calc(var(--page-max) - 2 * var(--page-gutter)); margin-inline: auto; }
+	.club-hero__copy { min-width: 0; max-width: 72rem; }
+	.club-hero h1 { max-width: 9em; font-size: clamp(3rem, 6.6vw, 6.25rem); line-height: 1.1; letter-spacing: -.055em; white-space: pre-line; font-weight: 700; }
+	.club-hero__lead { max-width: 32rem; margin-top: var(--space-lg); color: var(--color-ink-2); font-size: 1.0625rem; line-height: 1.9; }
+	.club-hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-lg); }
+	.club-hero__actions .btn { min-height: 3.5rem; padding-inline: var(--space-md); gap: var(--space-xl); }
+	@media (max-width: 40rem) {
+		.club-hero h1 { font-size: clamp(2rem, 8.7vw, 3.5rem); }
+	}
+</style>

@@ -1,0 +1,48 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "my-marketing-site",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2026-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "secrets": {
+    "required": ["AUTH_URL"],
+  },
+  "vars": {
+    "EMAIL_FROM": "noreply@tmedit.org",
+    "EMAIL_FROM_NAME": "IT部",
+    "SITE_URL": "https://tmedit.org",
+  },
+  // Local store placeholder; scripts/configure-verify-store.mjs sets the production ID.
+  "secrets_store_secrets": [
+    { "binding": "VERIFY_CLIENT_SECRET", "store_id": "00000000000000000000000000000000", "secret_name": "CLIENT_SECRET_TMEDIT" },
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["noreply@tmedit.org"],
+      "remote": true,
+    },
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "my-marketing-site",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "my-marketing-media",
+    },
+  ],
+  // Worker Loader for plugin sandboxing
+  "worker_loaders": [
+    {
+      "binding": "LOADER",
+    },
+  ],
+  // Drives scheduled publishing, plugin cron, and maintenance (see src/worker.ts)
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+}
