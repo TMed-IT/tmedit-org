@@ -1,6 +1,5 @@
 ---
-import { verificationPath } from "../lib/verify-client";
-import { getEmDashCollection, getEmDashEntry } from "emdash";
+import { getEmDashCollection } from "emdash";
 import Base from "../layouts/Base.astro";
 import Hero from "../components/blocks/Hero.astro";
 import Activities from "../components/blocks/Activities.astro";
@@ -11,21 +10,13 @@ import { disableSharedCache, isCampusRequest } from "../lib/campus-access";
 import { homeContent } from "../lib/home-content";
 
 const campusRequest = await isCampusRequest(Astro.cookies);
-const [{ entry: page, cacheHint: pageCacheHint, error: pageError }, firstNewsPage] = await Promise.all([
-	getEmDashEntry("pages", "home"),
-	getEmDashCollection("news", { status: "published", orderBy: { published_at: "desc" }, limit: 25 }),
-]);
-
-if (pageError) throw pageError;
+const firstNewsPage = await getEmDashCollection("news", {
+	status: "published",
+	orderBy: { published_at: "desc" },
+	limit: 25,
+});
 if (firstNewsPage.error) throw firstNewsPage.error;
-Astro.cache.set(pageCacheHint);
 Astro.cache.set(firstNewsPage.cacheHint);
-
-if (page?.data.campus_only) {
-	disableSharedCache(Astro.cache, Astro.response.headers);
-	Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
-	if (!campusRequest) return Astro.redirect(verificationPath(Astro.url));
-}
 
 // News visibility depends on verification, so disable shared caching.
 const visible = (items: typeof firstNewsPage.entries) =>
@@ -45,50 +36,12 @@ while (latestNews.length < 3 && cursor) {
 	cursor = next.nextCursor;
 }
 disableSharedCache(Astro.cache, Astro.response.headers);
-const pageTitle = page?.data.title;
-const content = homeContent(page?.data as Record<string, unknown> | undefined);
 ---
 
-<Base
-	title={pageTitle !== "ホーム" ? pageTitle : undefined}
-	description="プログラミングやWeb開発を、仲間と一緒に試しながら学ぶ東邦大学医学部の学生コミュニティです。"
-	content={page ? { collection: "pages", id: page.data.id, slug: page.id } : undefined}
->
-	{
-		content ? (
-			<>
-				<Hero node={content.hero} />
-				<Activities node={content.activities} />
-				<NewsPreview news={latestNews} />
-				<Projects node={content.projects} />
-				<FAQ node={content.faq} />
-			</>
-		) : (
-			<div class="empty-state">
-				<h1>IT部</h1>
-				<p>管理画面からホームページの内容を追加してください。</p>
-				<a href="/_emdash/api/auth/internal/authorize" class="btn btn-primary">
-					管理画面を開く
-				</a>
-			</div>
-		)
-	}
+<Base description="プログラミングやWeb開発を、仲間と一緒に試しながら学ぶ東邦大学医学部の学生コミュニティです。">
+	<Hero node={homeContent.hero} />
+	<Activities node={homeContent.activities} />
+	<NewsPreview news={latestNews} />
+	<Projects node={homeContent.projects} />
+	<FAQ node={homeContent.faq} />
 </Base>
-
-<style>
-	.empty-state {
-		text-align: center;
-		padding: var(--spacing-5xl) var(--spacing-lg);
-		max-width: var(--max-width);
-		margin: 0 auto;
-	}
-
-	.empty-state h1 {
-		margin-bottom: var(--spacing-md);
-	}
-
-	.empty-state p {
-		color: var(--color-muted);
-		margin-bottom: var(--spacing-xl);
-	}
-</style>

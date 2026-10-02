@@ -44,7 +44,7 @@ pnpm build      # 本番ビルド
 - URLには `entry.id`（slug）、API呼び出しには `entry.data.id`（DBのULID）を使います。
 - CMSの画像フィールドは `{ src, alt }` 形式です。`emdash/ui` の `<Image image={...} />` で表示します。
 - `src/live.config.ts` はローダー登録用の共通コードです。変更しません。
-- ホームは専用フィールドで編集します。`marketing.*` の読み取りと移行スクリプトは、旧DBとの互換性のために残しています。
+- ホームは `src/lib/home-content.ts` で管理し、CMSでは編集しません。既存DBは新しいseedで初期化する前提です。
 - メニューの `primary`・`footer_product`・`footer_company`・`footer_support` はseedとDBの識別子です。改名する場合は既存DBの移行も考慮してください。
 - 色や文字の調整は `tokens.css` と `src/styles/theme.css` で行います。共通の `src/styles/tokens.css` や `Base.astro` を見た目の変更目的で編集しません。
 
