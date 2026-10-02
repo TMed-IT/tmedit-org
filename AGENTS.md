@@ -20,7 +20,7 @@ pnpm build      # 本番ビルド
 | ファイル | 役割 |
 | --- | --- |
 | `astro.config.mjs` | EmDash、認証、D1、R2、プラグインの設定 |
-| `wrangler.jsonc` | Worker `tmedit-org`、D1 `tmedit-org`、R2 `tmedit-org-media` の設定 |
+| `wrangler.jsonc` | Worker・D1・KV `tmedit-org`、R2 `tmedit-org-media` の設定 |
 | `seed/seed.json` | `pages`・`news` のスキーマ、初期コンテンツ、メニュー |
 | `src/pages/index.astro` | ホームの活動紹介、お知らせ、プロジェクト、FAQ |
 | `src/pages/newsroom/` | お知らせの一覧と詳細 |

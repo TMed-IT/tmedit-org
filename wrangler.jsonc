@@ -33,6 +33,13 @@
       "bucket_name": "tmedit-org-media",
     },
   ],
+  // Astro sessions: KV namespace tmedit-org.
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "f7ea9f2d7add42aeb9661565be9ebcaf",
+    },
+  ],
   // Worker Loader for plugin sandboxing
   "worker_loaders": [
     {

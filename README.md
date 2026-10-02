@@ -122,7 +122,7 @@ APIや設定の仕様を調べるときは、[EmDashのドキュメント](https
 
 ## Cloudflare Workersへデプロイする
 
-デプロイ先のCloudflareアカウントで、`wrangler.jsonc` に対応するD1、R2、
+デプロイ先のCloudflareアカウントで、`wrangler.jsonc` に対応するD1、R2、KV、
 メール送信の設定を用意します。リソース名は次のとおりです。
 
 | リソース | 名前 |
@@ -130,6 +130,9 @@ APIや設定の仕様を調べるときは、[EmDashのドキュメント](https
 | Worker | `tmedit-org` |
 | D1 | `tmedit-org` |
 | R2 | `tmedit-org-media` |
+| KV（セッション用） | `tmedit-org` |
+
+セッション用KVは、ID `f7ea9f2d7add42aeb9661565be9ebcaf` を `SESSION` バインディングに設定しています。
 
 既存の別名のリソースにデータがある場合は、接続先を確認してからデプロイしてください。
 設定ファイルの名前を変えても、既存リソースの改名やデータ移行は行われません。
