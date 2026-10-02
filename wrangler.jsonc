@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "my-marketing-site",
+  "name": "tmedit-org",
   "main": "./src/worker.ts",
   "compatibility_date": "2026-09-24",
   "compatibility_flags": ["nodejs_compat"],
@@ -26,13 +26,13 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "my-marketing-site",
+      "database_name": "tmedit-org",
     },
   ],
   "r2_buckets": [
     {
       "binding": "MEDIA",
-      "bucket_name": "my-marketing-media",
+      "bucket_name": "tmedit-org-media",
     },
   ],
   // Worker Loader for plugin sandboxing

@@ -120,7 +120,17 @@ APIや設定の仕様を調べるときは、[EmDashのドキュメント](https
 ## Cloudflare Workersへデプロイする
 
 デプロイ先のCloudflareアカウントで、`wrangler.jsonc` に対応するD1、R2、
-メール送信の設定を用意します。Workerのシークレットには `AUTH_URL` を設定してください。
+メール送信の設定を用意します。リソース名は次のとおりです。
+
+| リソース | 名前 |
+| --- | --- |
+| Worker | `tmedit-org` |
+| D1 | `tmedit-org` |
+| R2 | `tmedit-org-media` |
+
+既存の別名のリソースにデータがある場合は、接続先を確認してからデプロイしてください。
+設定ファイルの名前を変えても、既存リソースの改名やデータ移行は行われません。
+Workerのシークレットには `AUTH_URL` を設定してください。
 送信元の `EMAIL_FROM`・`EMAIL_FROM_NAME`、公開URLの `SITE_URL` も確認します。
 
 verify側で作成したSecrets StoreのIDを `CLOUDFLARE_SECRETS_STORE_ID` に設定します。
@@ -183,6 +193,7 @@ Cloudflareの管理画面、またはローカルで次のコマンドを使っ�
 pnpm exec wrangler secret put AUTH_URL
 ```
 
-設定済みの `AUTH_URL` はデプロイ後も維持されます。
+同じWorkerへのデプロイでは、設定済みの `AUTH_URL` は維持されます。
+Worker名を変更した場合は、新しいWorkerにも `AUTH_URL` を設定してください。
 このプロジェクトでは必須シークレットとして宣言しているため、
 未設定の場合はデプロイに失敗します。
