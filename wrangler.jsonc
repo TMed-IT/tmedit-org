@@ -9,6 +9,10 @@
   "main": "./src/worker.ts",
   "compatibility_date": "2026-09-24",
   "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
   "vars": {
     "AUTH_URL": "https://auth.tmedit.org",
     "EMAIL_FROM": "noreply@tmedit.org",
