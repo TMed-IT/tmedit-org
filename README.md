@@ -15,12 +15,12 @@ Node.jsとpnpmを用意します。pnpmのバージョンは `package.json` の
 
 ```bash
 pnpm install
-cp .env.example .env
 ```
 
-`.env` の `AUTH_URL` を、利用するinternal認証サービスのURLに変更してください。
-ログインに使う認証サービスは、このリポジトリとは別に動かします。
-設定を終えたら、開発サーバーを起動します。
+通常は `wrangler.jsonc` の設定で起動できます。
+ローカルのinternal認証サービスを使う場合は、`.dev.vars` を作成し、
+`AUTH_URL` にそのサービスのURLを指定して上書きします。
+開発サーバーは次のコマンドで起動します。
 
 ```bash
 pnpm dev
@@ -48,7 +48,7 @@ pnpm dev
 本番ではHTTPSを使います。
 
 ```dotenv
-AUTH_URL=https://internal-auth.example.com
+AUTH_URL=https://auth.tmedit.org
 ```
 
 認証サービス側の `AUTH_TRUSTED_ORIGINS` には、このサイトのホスト名ラベルを追加してください。
@@ -115,8 +115,8 @@ APIや設定の仕様を調べるときは、[EmDashのドキュメント](https
 
 依存パッケージ、ビルド成果物、生成メタデータ、Wranglerのローカルデータ、
 アップロードファイル、キャッシュ、ログ、ローカルのレビュー記録（`docs/tmp/review/`）は `.gitignore` で除外します。
-環境変数やローカルの秘密情報は `.env` または `.dev.vars` に置きます。
-共有する設定例には `.env.example` または `.dev.vars.example` を使い、実際の秘密情報は記載しません。
+ローカルの上書き設定や秘密情報は `.dev.vars` に置きます。
+`.env` と `.dev.vars` はGit管理から除外し、実際の秘密情報をコミットしません。
 
 `.gitattributes` でテキストファイルの改行をLFに統一しています。
 
@@ -133,7 +133,8 @@ APIや設定の仕様を調べるときは、[EmDashのドキュメント](https
 
 既存の別名のリソースにデータがある場合は、接続先を確認してからデプロイしてください。
 設定ファイルの名前を変えても、既存リソースの改名やデータ移行は行われません。
-Workerのシークレットには `AUTH_URL` を設定してください。
+認証サービスの `AUTH_URL` は `https://auth.tmedit.org`、
+公開サイトの `SITE_URL` は `https://tmedit.org` として、`wrangler.jsonc` の `vars` に設定しています。
 送信元の `EMAIL_FROM`・`EMAIL_FROM_NAME`、公開URLの `SITE_URL` も確認します。
 
 verify側で作成したSecrets StoreのIDを `CLOUDFLARE_SECRETS_STORE_ID` に設定します。
@@ -188,15 +189,5 @@ Secrets Storeのバインディングには `Account Secrets Store: Edit` 権限
 デプロイ先と一致することを確認してください。既存のD1を使う場合は、
 その `database_id` も設定しておくと接続先を固定できます。
 
-`AUTH_URL` はGitHub Secretではなく、CloudflareのWorkerシークレットに設定します。
-Cloudflareの管理画面、またはローカルで次のコマンドを使って登録してください。
-コマンドの入力待ちになったら、認証サービスのオリジンを入力します。
-
-```bash
-pnpm exec wrangler secret put AUTH_URL
-```
-
-同じWorkerへのデプロイでは、設定済みの `AUTH_URL` は維持されます。
-Worker名を変更した場合は、新しいWorkerにも `AUTH_URL` を設定してください。
-このプロジェクトでは必須シークレットとして宣言しているため、
-未設定の場合はデプロイに失敗します。
+`AUTH_URL` と `SITE_URL` は公開URLのため、Gitで管理する `wrangler.jsonc` に記載します。
+認証サービスや公開先を変える場合は、`vars` の値を更新してください。

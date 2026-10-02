@@ -4,10 +4,8 @@
   "main": "./src/worker.ts",
   "compatibility_date": "2026-09-24",
   "compatibility_flags": ["nodejs_compat"],
-  "secrets": {
-    "required": ["AUTH_URL"],
-  },
   "vars": {
+    "AUTH_URL": "https://auth.tmedit.org",
     "EMAIL_FROM": "noreply@tmedit.org",
     "EMAIL_FROM_NAME": "IT部",
     "SITE_URL": "https://tmedit.org",

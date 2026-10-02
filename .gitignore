@@ -25,7 +25,6 @@ uploads/
 # Environment
 .env
 .env.*
-!.env.example
 
 # Wrangler local secrets
 .dev.vars
