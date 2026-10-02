@@ -130,7 +130,7 @@
     },
     {
       "name": "footer_company",
-      "label": "フッター: 外部リンク",
+      "label": "フッター: ポリシーと外部リンク",
       "items": [
         {
           "type": "custom",

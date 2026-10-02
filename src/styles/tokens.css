@@ -1,5 +1,5 @@
 /*
-  tokens.css -- the design tokens for this template. These are the
+  tokens.css -- the shared base design tokens for this site. These are the
   defaults; to customize the site, override any variable in
   src/styles/theme.css rather than editing this file. Declarations in
   theme.css are unlayered, so they always beat these @layer base
