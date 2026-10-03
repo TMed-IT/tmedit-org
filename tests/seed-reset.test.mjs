@@ -131,7 +131,7 @@ for (const target of allTargets) {
   test(`resetting ${target} preserves every unselected item and only clears deliveries for news`, async () => {
     const db = await database();
     try {
-      await db.updateTable("ec_home").set({ title: "Customized home" }).execute();
+      await db.updateTable("ec_home").set({ hero: JSON.stringify({ headline: "Customized home" }) }).execute();
       await db.updateTable("ec_pages").set({ title: "Customized page" }).execute();
       await db.updateTable("_emdash_menus").set({ label: "Customized menu" }).execute();
       await applySeed(db, { version: "1", defaultLocale: "ja", settings: { title: "Customized title", tagline: "Customized tagline" }, content: {
@@ -158,13 +158,13 @@ for (const target of allTargets) {
 test("multiple selected items reset together and leave the remaining content untouched", async () => {
   const db = await database();
   try {
-    await db.updateTable("ec_home").set({ title: "Customized home" }).execute();
+    await db.updateTable("ec_home").set({ hero: JSON.stringify({ headline: "Customized home" }) }).execute();
     await db.updateTable("ec_pages").set({ title: "Customized page" }).execute();
     const pages = await snapshot(db, "pages");
     const news = await snapshot(db, "news");
     const settings = await snapshot(db, "settings");
     await resetSiteContent(db, ["home", "menus"]);
-    assert.notEqual((await db.selectFrom("ec_home").select("title").executeTakeFirst()).title, "Customized home");
+    assert.notEqual((await db.selectFrom("ec_home").select("hero").executeTakeFirst()).hero, JSON.stringify({ headline: "Customized home" }));
     assert.deepEqual(await snapshot(db, "pages"), pages);
     assert.deepEqual(await snapshot(db, "news"), news);
     assert.deepEqual(await snapshot(db, "settings"), settings);
@@ -177,7 +177,7 @@ test("seed reset replaces content, drafts, revisions and menus while preserving 
     await db.insertInto("users").values({ id: "admin", email: "admin@example.org", role: 50 }).execute();
     await db.insertInto("options").values({ name: "auth.test", value: '"keep"' }).execute();
     await applySeed(db, { ...seed, collections: [{ slug: "extra", label: "Extra", fields: [{ slug: "title", type: "text", label: "Title" }] }], content: { extra: [{ id: "keep", slug: "keep", status: "published", data: { title: "keep" } }] }, menus: [] }, { includeContent: true });
-    await db.updateTable("ec_home").set({ title: "Changed" }).execute();
+    await db.updateTable("ec_home").set({ hero: JSON.stringify({ headline: "Changed" }) }).execute();
     await db.insertInto("revisions").values({ id: "revision", collection: "home", entry_id: "old", data: "{}" }).execute();
     await db.insertInto("_emdash_seo").values({ collection: "home", content_id: "old", seo_title: "old" }).execute();
     globalThis.__seedTestEnv.DB = d1(db);
@@ -191,7 +191,7 @@ test("seed reset replaces content, drafts, revisions and menus while preserving 
     assert.equal((await route.POST(ctx)).status, 200);
     assert.ok(tags.includes(oldIds[0]));
     assert.equal((await db.selectFrom("ec_home").selectAll().execute()).length, 1);
-    assert.notEqual((await db.selectFrom("ec_home").select("title").executeTakeFirst()).title, "Changed");
+    assert.notEqual((await db.selectFrom("ec_home").select("hero").executeTakeFirst()).hero, JSON.stringify({ headline: "Changed" }));
     assert.equal((await db.selectFrom("ec_pages").selectAll().execute()).length, 2);
     assert.equal((await db.selectFrom("ec_news").selectAll().execute()).length, 0);
     assert.equal((await db.selectFrom("_emdash_menus").selectAll().execute()).length, 4);

@@ -50,7 +50,6 @@ disableSharedCache(Astro.cache, Astro.response.headers);
 ---
 
 <Base
-	title={page.data.title !== "ホーム" ? page.data.title : undefined}
 	description="プログラミングやWeb開発を、仲間と一緒に試しながら学ぶ東邦大学医学部の学生コミュニティです。"
 	content={{ collection: "home", id: page.data.id, slug: page.id }}
 >

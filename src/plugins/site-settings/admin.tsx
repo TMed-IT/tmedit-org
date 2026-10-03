@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { permissionErrorMessage } from "./messages.mjs";
 import { resetOptions, resetTargetLabels } from "./reset-options.mjs";
+export { fields } from "./home-fields";
 
 const endpoint = "/_emdash/api/site-settings/seed";
 

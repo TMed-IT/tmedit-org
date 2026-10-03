@@ -3,6 +3,7 @@ import react from "@astrojs/react";
 import { d1, r2 } from "@emdash-cms/cloudflare";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
+import { homeFieldWidgets } from "./src/plugins/site-settings/home-sections.mjs";
 import { internalAuth } from "./auth/internal/index.ts";
 
 const cloudflareEmailPlugin = {
@@ -28,6 +29,7 @@ const siteSettingsPlugin = {
   version: "1.0.0",
   entrypoint: new URL("./src/plugins/site-settings/index.ts", import.meta.url).href,
   adminEntry: decodeURIComponent(new URL("./src/plugins/site-settings/admin.tsx", import.meta.url).pathname),
+  fieldWidgets: homeFieldWidgets,
   options: { adminEntry: decodeURIComponent(new URL("./src/plugins/site-settings/admin.tsx", import.meta.url).pathname) },
 };
 

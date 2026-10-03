@@ -57,119 +57,33 @@
       ],
       "fields": [
         {
-          "slug": "title",
-          "label": "タイトル",
-          "type": "string",
-          "required": true
+          "slug": "hero",
+          "label": "トップの紹介",
+          "type": "json",
+          "widget": "site-settings:home-hero"
         },
         {
-          "slug": "hero_headline",
-          "label": "メイン見出し",
-          "type": "text"
+          "slug": "activities",
+          "label": "活動内容",
+          "type": "json",
+          "widget": "site-settings:home-activities"
         },
         {
-          "slug": "hero_subheadline",
-          "label": "紹介文",
-          "type": "text"
+          "slug": "projects",
+          "label": "公開プロジェクト",
+          "type": "json",
+          "widget": "site-settings:home-projects"
         },
         {
-          "slug": "hero_cta_label",
-          "label": "ボタン文言",
-          "type": "string"
-        },
-        {
-          "slug": "hero_cta_url",
-          "label": "ボタンリンク",
-          "type": "string"
-        },
-        {
-          "slug": "activities_headline",
-          "label": "活動の見出し",
-          "type": "string"
-        },
-        {
-          "slug": "activities_subheadline",
-          "label": "活動の説明",
-          "type": "text"
-        },
-        {
-          "slug": "activities_items",
-          "label": "活動項目",
-          "type": "repeater",
-          "validation": {
-            "subFields": [
-              {
-                "slug": "title",
-                "label": "項目名",
-                "type": "string",
-                "required": true
-              },
-              {
-                "slug": "description",
-                "label": "説明",
-                "type": "text",
-                "required": true
-              }
-            ]
-          }
-        },
-        {
-          "slug": "projects_headline",
-          "label": "プロジェクトの見出し",
-          "type": "string"
-        },
-        {
-          "slug": "projects_subheadline",
-          "label": "プロジェクトの説明",
-          "type": "text"
-        },
-        {
-          "slug": "projects_organization",
-          "label": "GitHub組織",
-          "type": "string"
-        },
-        {
-          "slug": "projects_github_url",
-          "label": "GitHubリンク",
-          "type": "url"
-        },
-        {
-          "slug": "projects_max",
-          "label": "表示件数",
-          "type": "integer"
-        },
-        {
-          "slug": "faq_headline",
-          "label": "FAQの見出し",
-          "type": "string"
-        },
-        {
-          "slug": "faq_subheadline",
-          "label": "FAQの説明",
-          "type": "text"
-        },
-        {
-          "slug": "faq_items",
-          "label": "質問と回答",
-          "type": "repeater",
-          "validation": {
-            "subFields": [
-              {
-                "slug": "question",
-                "label": "質問",
-                "type": "string",
-                "required": true
-              },
-              {
-                "slug": "answer",
-                "label": "回答",
-                "type": "text",
-                "required": true
-              }
-            ]
-          }
+          "slug": "faq",
+          "label": "よくある質問",
+          "type": "json",
+          "widget": "site-settings:home-faq"
         }
-      ]
+      ],
+      "admin": {
+        "quickCreate": false
+      }
     },
     {
       "slug": "pages",
@@ -256,64 +170,63 @@
         "slug": "home",
         "status": "published",
         "data": {
-          "title": "ホーム",
-          "hero_headline": "仲間と学び、\n技術でつくる。",
-          "hero_subheadline": "初心者から経験者まで、プログラミングやWeb制作を一緒に学ぶ部活です。",
-          "hero_cta_label": "活動を見る",
-          "hero_cta_url": "#activities",
-          "activities_headline": "活動内容",
-          "activities_subheadline": "プログラミング学習からサービス運営まで、興味に合わせて実践できます。",
-          "activities_items": [
-            {
-              "title": "オンラインコミュニティ",
-              "description": "Discordで質問や技術共有ができます。授業や個人制作の悩みも気軽に相談できます。"
-            },
-            {
-              "title": "プログラミング",
-              "description": "PythonやJavaScriptを中心に、基礎から手を動かして学びます。"
-            },
-            {
-              "title": "サービスの運営",
-              "description": "実際に使われるサービスを保守し、利用者の声をもとに改善します。"
-            },
-            {
-              "title": "講座と共有会",
-              "description": "制作で得た知識や便利なツールの使い方を、短い講座で共有します。"
-            }
-          ],
-          "projects_headline": "公開プロジェクト",
-          "projects_subheadline": "同好会で開発・運営しているプロジェクトを紹介します。",
-          "projects_organization": "tmed-it",
-          "projects_github_url": "https://github.com/tmed-it",
-          "projects_max": 5,
-          "faq_headline": "よくある質問",
-          "faq_subheadline": "参加前によくいただく質問をまとめました。",
-          "faq_items": [
-            {
-              "question": "初心者でも参加できますか？",
-              "answer": "はい。経験は問いません。「少し興味がある」という段階から参加できます。分からないことを質問しやすく、自分のペースで手を動かせる環境をつくっています。"
-            },
-            {
-              "question": "どんなパソコンが必要ですか？",
-              "answer": "WindowsとMacのどちらでも参加できます。開発環境を整えにくいことがあるため、iPadなどのタブレットだけでの参加は推奨していません。"
-            },
-            {
-              "question": "活動は週にどれくらいありますか？",
-              "answer": "オンラインでのやり取りはいつでも自由です。活動は基本的に自由参加なので、実習やアルバイトの予定に合わせて無理なく続けられます。"
-            },
-            {
-              "question": "部費や費用はかかりますか？",
-              "answer": "使うソフトウェアやサービスによって、費用がかかる場合があります。活動に必要なものや費用は、参加前にご確認ください。"
-            },
-            {
-              "question": "プログラミング以外も学べますか？",
-              "answer": "学べます。ExcelやWordなどのソフトウェア、デザイン、サービス運営など、メンバーの興味に合わせて幅広いテーマを扱います。"
-            },
-            {
-              "question": "どんな人が参加できますか？",
-              "answer": "学年や経験を問わず、ITに興味のある学生が参加できます。勉強してみたいことや、つくってみたいものがあれば気軽にご相談ください。"
-            }
-          ]
+          "hero": {
+            "headline": "仲間と学び、\n技術でつくる。",
+            "subheadline": "初心者から経験者まで、プログラミングやWeb制作を一緒に学ぶ部活です。"
+          },
+          "activities": {
+            "subheadline": "プログラミング学習からサービス運営まで、興味に合わせて実践できます。",
+            "items": [
+              {
+                "title": "オンラインコミュニティ",
+                "description": "Discordで質問や技術共有ができます。授業や個人制作の悩みも気軽に相談できます。"
+              },
+              {
+                "title": "プログラミング",
+                "description": "PythonやJavaScriptを中心に、基礎から手を動かして学びます。"
+              },
+              {
+                "title": "サービスの運営",
+                "description": "実際に使われるサービスを保守し、利用者の声をもとに改善します。"
+              },
+              {
+                "title": "講座と共有会",
+                "description": "制作で得た知識や便利なツールの使い方を、短い講座で共有します。"
+              }
+            ]
+          },
+          "projects": {
+            "subheadline": "同好会で開発・運営しているプロジェクトを紹介します。"
+          },
+          "faq": {
+            "subheadline": "参加前によくいただく質問をまとめました。",
+            "items": [
+              {
+                "question": "初心者でも参加できますか？",
+                "answer": "はい。経験は問いません。「少し興味がある」という段階から参加できます。分からないことを質問しやすく、自分のペースで手を動かせる環境をつくっています。"
+              },
+              {
+                "question": "どんなパソコンが必要ですか？",
+                "answer": "WindowsとMacのどちらでも参加できます。開発環境を整えにくいことがあるため、iPadなどのタブレットだけでの参加は推奨していません。"
+              },
+              {
+                "question": "活動は週にどれくらいありますか？",
+                "answer": "オンラインでのやり取りはいつでも自由です。活動は基本的に自由参加なので、実習やアルバイトの予定に合わせて無理なく続けられます。"
+              },
+              {
+                "question": "部費や費用はかかりますか？",
+                "answer": "使うソフトウェアやサービスによって、費用がかかる場合があります。活動に必要なものや費用は、参加前にご確認ください。"
+              },
+              {
+                "question": "プログラミング以外も学べますか？",
+                "answer": "学べます。ExcelやWordなどのソフトウェア、デザイン、サービス運営など、メンバーの興味に合わせて幅広いテーマを扱います。"
+              },
+              {
+                "question": "どんな人が参加できますか？",
+                "answer": "学年や経験を問わず、ITに興味のある学生が参加できます。勉強してみたいことや、つくってみたいものがあれば気軽にご相談ください。"
+              }
+            ]
+          }
         }
       }
     ],
