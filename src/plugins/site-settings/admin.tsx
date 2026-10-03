@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { permissionErrorMessage } from "./messages.mjs";
 import { resetOptions, resetTargetLabels } from "./reset-options.mjs";
 
@@ -10,6 +10,8 @@ function SettingsPage() {
 	const [confirmation, setConfirmation] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [message, setMessage] = useState("");
+	const confirmationDialog = useRef<HTMLDialogElement>(null);
+	const cancelButton = useRef<HTMLButtonElement>(null);
 	useEffect(() => {
 		const controller = new AbortController();
 		fetch(endpoint, { signal: controller.signal, headers: { "X-EmDash-Request": "1" } }).then((response) => {
@@ -25,9 +27,14 @@ function SettingsPage() {
 		setMessage("");
 	}
 
-	async function reset() {
+	function openConfirmation() {
 		if (!allowed || busy || !targets.length || confirmation !== "初期化") return;
-		if (!window.confirm(`${resetTargetLabels(targets)}を初期データに戻します。この操作は取り消せません。実行しますか？`)) return;
+		confirmationDialog.current?.showModal();
+		cancelButton.current?.focus();
+	}
+
+	async function reset() {
+		if (!confirmationDialog.current?.open || !allowed || busy || !targets.length || confirmation !== "初期化") return;
 		setBusy(true);
 		setMessage("");
 		try {
@@ -41,7 +48,10 @@ function SettingsPage() {
 			setConfirmation("");
 		} catch {
 			setMessage("通信が切れました。初期化が続いている可能性があります。すぐに再実行せず、サイトと管理画面の状態を確認してください。");
-		} finally { setBusy(false); }
+		} finally {
+			setBusy(false);
+			confirmationDialog.current?.close();
+		}
 	}
 
 	return <section className="mx-auto max-w-3xl space-y-6 p-6">
@@ -63,8 +73,21 @@ function SettingsPage() {
 		{allowed && <div className="space-y-3">
 			<label className="block" htmlFor="seed-confirmation">実行する場合は「初期化」と入力してください。</label>
 			<input id="seed-confirmation" className="rounded border p-2" autoComplete="off" value={confirmation} disabled={busy} onChange={(event) => setConfirmation(event.target.value)} />
-			<button type="button" className="block rounded px-4 py-2 text-white" style={{ backgroundColor: "#b91c1c", opacity: busy || !targets.length || confirmation !== "初期化" ? 0.5 : 1 }} disabled={busy || !targets.length || confirmation !== "初期化"} onClick={reset}>{busy ? "初期化しています…" : "選択した項目を初期化する（seed）"}</button>
+			<button type="button" className="block rounded px-4 py-2 text-white" style={{ backgroundColor: "#b91c1c", opacity: busy || !targets.length || confirmation !== "初期化" ? 0.5 : 1 }} disabled={busy || !targets.length || confirmation !== "初期化"} onClick={openConfirmation}>{busy ? "初期化しています…" : "選択した項目を初期化する（seed）"}</button>
 		</div>}
+		<style>{`.site-settings-confirmation::backdrop { background: rgb(0 0 0 / 0.55); }`}</style>
+		<dialog ref={confirmationDialog} className="site-settings-confirmation space-y-4" role="alertdialog" aria-labelledby="seed-dialog-title" aria-describedby="seed-dialog-description" aria-busy={busy} onCancel={(event) => { if (busy) event.preventDefault(); }} style={{ width: "min(32rem, calc(100vw - 2rem))", margin: "auto", padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #b91c1c", backgroundColor: "var(--color-kumo-base, Canvas)", color: "var(--color-kumo-default, CanvasText)", boxShadow: "0 20px 60px rgb(0 0 0 / 0.3)" }}>
+			<h2 id="seed-dialog-title" className="text-xl font-semibold">選択した項目を初期化しますか？</h2>
+			<div id="seed-dialog-description" className="space-y-3">
+				<p className="font-semibold">{resetTargetLabels(targets)}</p>
+				<p>選択した項目を初期データに戻します。この操作は取り消せません。</p>
+				<p>選択していない項目は変更しません。</p>
+			</div>
+			<div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", flexWrap: "wrap" }}>
+				<button ref={cancelButton} type="button" className="rounded border px-4 py-2" disabled={busy} onClick={() => confirmationDialog.current?.close()}>キャンセル</button>
+				<button type="button" className="rounded px-4 py-2 text-white" disabled={busy} style={{ backgroundColor: "#b91c1c", opacity: busy ? 0.5 : 1 }} onClick={reset}>{busy ? "初期化しています…" : "初期化を実行する"}</button>
+			</div>
+		</dialog>
 		{message && <p role="status" aria-live="polite">{message}</p>}
 	</section>;
 }
