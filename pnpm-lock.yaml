@@ -206,6 +206,9 @@ importers:
       '@types/node':
         specifier: ^26.6.2
         version: 26.6.2
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
       wrangler:
         specifier: ^4.136.3
         version: 4.136.3(@cloudflare/workers-types@5.20260923.1)(@types/node@26.6.2)

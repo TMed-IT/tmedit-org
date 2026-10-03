@@ -23,6 +23,14 @@ const newsNotificationsPlugin = {
   ).href,
 };
 
+const siteSettingsPlugin = {
+  id: "site-settings",
+  version: "1.0.0",
+  entrypoint: new URL("./src/plugins/site-settings/index.ts", import.meta.url).href,
+  adminEntry: decodeURIComponent(new URL("./src/plugins/site-settings/admin.tsx", import.meta.url).pathname),
+  options: { adminEntry: decodeURIComponent(new URL("./src/plugins/site-settings/admin.tsx", import.meta.url).pathname) },
+};
+
 export default defineConfig({
   output: "server",
   i18n: {
@@ -47,6 +55,7 @@ export default defineConfig({
       plugins: [
         cloudflareEmailPlugin,
         newsNotificationsPlugin,
+        siteSettingsPlugin,
       ],
     }),
   ],
