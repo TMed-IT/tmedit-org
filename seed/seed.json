@@ -1,6 +1,7 @@
 {
   "$schema": "https://emdashcms.com/seed.schema.json",
   "version": "1",
+  "defaultLocale": "ja",
   "meta": {
     "name": "東邦大学医学部 IT部",
     "description": "IT部の公式ホームページ",

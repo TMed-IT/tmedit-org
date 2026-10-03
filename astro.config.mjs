@@ -25,6 +25,10 @@ const newsNotificationsPlugin = {
 
 export default defineConfig({
   output: "server",
+  i18n: {
+    defaultLocale: "ja",
+    locales: ["ja"],
+  },
   publicDir: "./brand",
   adapter: cloudflare(),
   image: {

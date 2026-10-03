@@ -74,6 +74,10 @@ internal認証で最初にログインしたユーザーにはEmDashの管理者
 既存DBは初期化して新しいseedを適用する前提です。seedの変更だけでは、
 既存DBにホーム専用コレクションは追加されません。
 
+サイトとCMSコンテンツの既定言語は `ja`（日本語）です。
+`astro.config.mjs` の `i18n` とseedの `defaultLocale` をそろえ、URLに言語の接頭辞は付けません。
+HTMLの `lang` とレスポンスの `Content-Language` も `ja` に設定します。
+
 `campus_only` を有効にしたページやお知らせは、
 [verify](https://verify.tmedit.org)で大学のメールアドレスによる在籍確認を済ませると閲覧できます。
 お知らせページの「大学のメールアドレスで在籍確認する」から確認を始めます。
