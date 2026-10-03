@@ -25,7 +25,6 @@ pnpm build      # 本番ビルド
 | `src/pages/index.astro` | ホームの活動紹介、お知らせ、プロジェクト、FAQ |
 | `src/pages/newsroom/` | お知らせの一覧と詳細 |
 | `src/pages/[slug].astro` | CMSの固定ページ。プライバシーポリシー、利用規約など |
-| `src/pages/contact.astro` | 問い合わせ窓口の準備中案内。送信フォームは未実装 |
 | `auth/internal/` | 管理画面のinternal認証 |
 | `src/lib/verify-client.ts` | 学内限定コンテンツのverify認証 |
 | `src/lib/news-subscriptions.ts` | お知らせの購読、配信停止、メール配信 |
