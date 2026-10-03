@@ -8,6 +8,7 @@ import { runMigrations } from "emdash/db";
 import { applySeed } from "emdash/seed";
 import { resetSiteContent } from "../src/lib/seed-reset.mjs";
 import { permissionErrorMessage } from "../src/plugins/site-settings/messages.mjs";
+import { resetOptions } from "../src/plugins/site-settings/reset-options.mjs";
 import seed from "../seed/seed.json" with { type: "json" };
 
 const require = createRequire(import.meta.resolve("emdash/db"));
@@ -48,11 +49,12 @@ function d1(db) {
     batch(statements) { return Promise.all(statements.map((statement) => statement.run())); },
   };
 }
-function context(db, overrides = {}) {
+const allTargets = resetOptions.map((option) => option.id);
+function context(db, overrides = {}, targets = allTargets) {
   return {
     request: new Request("https://tmedit.org/_emdash/api/site-settings/seed", {
       method: "POST", headers: { Origin: "https://tmedit.org", "Content-Type": "application/json", "X-EmDash-Request": "1" },
-      body: JSON.stringify({ confirmation: "初期化" }),
+      body: JSON.stringify({ confirmation: "初期化", targets }),
     }),
     locals: { user: { id: "admin", role: 50 }, emdash: { db, invalidateUrlPatternCache() {} } },
     cache: { enabled: false },
@@ -102,6 +104,73 @@ test("missing routes and server failures are not reported as insufficient admini
   assert.match(permissionErrorMessage(403), /管理者だけ/);
 });
 
+test("reset requires an explicit, nonempty selection of known items", async () => {
+  for (const targets of [undefined, null, [], ["unknown"], ["users"], ["home", "home"], ["home", 1]]) {
+    const ctx = context(null);
+    ctx.request = new Request(ctx.request, { body: JSON.stringify({ confirmation: "初期化", targets }) });
+    assert.equal((await route.POST(ctx)).status, 400);
+  }
+});
+
+async function snapshot(db, target) {
+  if (target === "settings") return db.selectFrom("options").selectAll().where("name", "like", "site:%").orderBy("name").execute();
+  if (target === "menus") return {
+    menus: await db.selectFrom("_emdash_menus").selectAll().orderBy("id").execute(),
+    items: await db.selectFrom("_emdash_menu_items").selectAll().orderBy("id").execute(),
+  };
+  const collection = await db.selectFrom("_emdash_collections").selectAll().where("slug", "=", target).executeTakeFirst();
+  return {
+    collection,
+    fields: await db.selectFrom("_emdash_fields").selectAll().where("collection_id", "=", collection.id).orderBy("id").execute(),
+    entries: await db.selectFrom(`ec_${target}`).selectAll().orderBy("id").execute(),
+    revisions: await db.selectFrom("revisions").selectAll().where("collection", "=", target).orderBy("id").execute(),
+  };
+}
+
+for (const target of allTargets) {
+  test(`resetting ${target} preserves every unselected item and only clears deliveries for news`, async () => {
+    const db = await database();
+    try {
+      await db.updateTable("ec_home").set({ title: "Customized home" }).execute();
+      await db.updateTable("ec_pages").set({ title: "Customized page" }).execute();
+      await db.updateTable("_emdash_menus").set({ label: "Customized menu" }).execute();
+      await applySeed(db, { version: "1", defaultLocale: "ja", settings: { title: "Customized title", tagline: "Customized tagline" }, content: {
+        news: [{ id: "custom-news", slug: "custom-news", status: "draft", data: { title: "Customized news" } }],
+      } }, { includeContent: true, onConflict: "update" });
+      await db.schema.createTable("news_deliveries").addColumn("id", "integer", col => col.primaryKey()).execute();
+      await db.insertInto("news_deliveries").values({ id: 1 }).execute();
+      const before = Object.fromEntries(await Promise.all(allTargets.map(async (id) => [id, await snapshot(db, id)])));
+      globalThis.__seedTestEnv.DB = d1(db);
+      const tags = [];
+      const response = await route.POST(context(db, { cache: { enabled: true, async invalidate(value) { tags.push(...value.tags); } } }, [target]));
+      assert.equal(response.status, 200);
+      for (const other of allTargets.filter(id => id !== target)) {
+        assert.deepEqual(await snapshot(db, other), before[other], `${other} must remain unchanged`);
+      }
+      assert.notDeepEqual(await snapshot(db, target), before[target]);
+      assert.equal((await db.selectFrom("news_deliveries").selectAll().execute()).length, target === "news" ? 0 : 1);
+      if (target === "menus") assert.ok(tags.includes("emdash:menu:primary"));
+      if (target === "settings") assert.ok(tags.includes("emdash:settings"));
+    } finally { await db.destroy(); }
+  });
+}
+
+test("multiple selected items reset together and leave the remaining content untouched", async () => {
+  const db = await database();
+  try {
+    await db.updateTable("ec_home").set({ title: "Customized home" }).execute();
+    await db.updateTable("ec_pages").set({ title: "Customized page" }).execute();
+    const pages = await snapshot(db, "pages");
+    const news = await snapshot(db, "news");
+    const settings = await snapshot(db, "settings");
+    await resetSiteContent(db, ["home", "menus"]);
+    assert.notEqual((await db.selectFrom("ec_home").select("title").executeTakeFirst()).title, "Customized home");
+    assert.deepEqual(await snapshot(db, "pages"), pages);
+    assert.deepEqual(await snapshot(db, "news"), news);
+    assert.deepEqual(await snapshot(db, "settings"), settings);
+  } finally { await db.destroy(); }
+});
+
 test("seed reset replaces content, drafts, revisions and menus while preserving identity and unrelated data; rerunning is safe", async () => {
   const db = await database();
   try {
@@ -144,7 +213,7 @@ test("related collections prevent reset before any content or delivery mutation"
   try {
     await db.insertInto("_emdash_relations").values({ id: "relation", slug: "linked", parent_collection: "home", child_collection: "pages", parent_label: "Home", child_label: "Page" }).execute();
     let mutated = false;
-    await assert.rejects(resetSiteContent(db, async () => { mutated = true; }), /関連/);
+    await assert.rejects(resetSiteContent(db, ["home"], async () => { mutated = true; }), /関連/);
     assert.equal(mutated, false);
     assert.equal((await db.selectFrom("ec_home").selectAll().execute()).length, 1);
   } finally { await db.destroy(); }

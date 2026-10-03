@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { Role } from "@emdash-cms/auth";
-import { readResetConfirmation, resetAuthorization, resetSiteContent } from "../../lib/seed-reset.mjs";
+import { readResetSelection, resetAuthorization, resetSiteContent } from "../../lib/seed-reset.mjs";
 import { ensureSubscriptionTables } from "../../lib/news-subscriptions";
+import { resetTargetLabels } from "./reset-options.mjs";
 
 export const prerender = false;
 const reply = (status: number, message: string) => Response.json({ message }, {
@@ -15,7 +16,8 @@ export const GET: APIRoute = ({ locals }) => locals.user?.role === Role.ADMIN
 export const POST: APIRoute = async ({ request, locals, cache }) => {
 	const denied = resetAuthorization(request, locals.user);
 	if (denied) return reply(denied, "管理者権限と同一サイトからの操作が必要です。");
-	if (!await readResetConfirmation(request)) return reply(400, "確認欄に「初期化」と入力してください。");
+	const targets = await readResetSelection(request);
+	if (!targets) return reply(400, "初期化する項目を選び、確認欄に「初期化」と入力してください。");
 
 	const owner = crypto.randomUUID();
 	let acquired = false;
@@ -26,14 +28,16 @@ export const POST: APIRoute = async ({ request, locals, cache }) => {
 			.bind(owner, Date.now() + 300_000, Date.now()).run();
 		if (!lock.meta.changes) return reply(409, "初期化が実行中です。完了するまでお待ちください。");
 		acquired = true;
-		const { tags } = await resetSiteContent(locals.emdash.db, async () => {
-			await ensureSubscriptionTables(env.DB);
-			await env.DB.prepare("DELETE FROM news_deliveries").run();
+		const { tags } = await resetSiteContent(locals.emdash.db, targets, async () => {
+			if (targets.includes("news")) {
+				await ensureSubscriptionTables(env.DB);
+				await env.DB.prepare("DELETE FROM news_deliveries").run();
+			}
 		});
 		locals.emdash.invalidateUrlPatternCache();
 		if (cache.enabled) await cache.invalidate({ tags });
-		console.info("[site-settings] Seed reset completed", { administrator: locals.user!.id });
-		return reply(200, "初期化が完了しました。ホーム・固定ページ・お知らせをseedの状態に戻しました。");
+		console.info("[site-settings] Seed reset completed", { administrator: locals.user!.id, targets });
+		return reply(200, `${resetTargetLabels(targets)}の初期化が完了しました。`);
 	} catch (error) {
 		console.error("[site-settings] Seed reset failed", error);
 		return reply(500, "初期化を完了できませんでした。変更が一部反映されている可能性があります。管理者がログを確認してから再実行してください。");

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { permissionErrorMessage } from "./messages.mjs";
+import { resetOptions, resetTargetLabels } from "./reset-options.mjs";
 
 const endpoint = "/_emdash/api/site-settings/seed";
 
 function SettingsPage() {
 	const [allowed, setAllowed] = useState(false);
+	const [targets, setTargets] = useState<string[]>([]);
 	const [confirmation, setConfirmation] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [message, setMessage] = useState("");
@@ -17,16 +19,22 @@ function SettingsPage() {
 		return () => controller.abort();
 	}, []);
 
+	function selectTargets(next: string[]) {
+		setTargets(next);
+		setConfirmation("");
+		setMessage("");
+	}
+
 	async function reset() {
-		if (!allowed || busy || confirmation !== "初期化") return;
-		if (!window.confirm("ホーム・固定ページ・お知らせを削除して初期データに戻します。この操作は取り消せません。実行しますか？")) return;
+		if (!allowed || busy || !targets.length || confirmation !== "初期化") return;
+		if (!window.confirm(`${resetTargetLabels(targets)}を初期データに戻します。この操作は取り消せません。実行しますか？`)) return;
 		setBusy(true);
 		setMessage("");
 		try {
 			const response = await fetch(endpoint, {
 				method: "POST",
 				headers: { "Content-Type": "application/json", "X-EmDash-Request": "1" },
-				body: JSON.stringify({ confirmation }),
+				body: JSON.stringify({ confirmation, targets }),
 			});
 			const result = await response.json() as { message?: string };
 			setMessage(result.message || "結果を確認できませんでした。");
@@ -39,16 +47,23 @@ function SettingsPage() {
 	return <section className="mx-auto max-w-3xl space-y-6 p-6">
 		<h1 className="text-2xl font-semibold">サイト設定</h1>
 		<h2 className="text-xl font-semibold">初期化（seed）</h2>
+		{allowed && <fieldset disabled={busy} className="space-y-3">
+			<legend className="font-semibold">初期化する項目を選んでください（複数選択可）。</legend>
+			{resetOptions.map((option) => <label key={option.id} className="block">
+				<input type="checkbox" checked={targets.includes(option.id)} onChange={(event) => selectTargets(event.target.checked ? [...targets, option.id] : targets.filter((target) => target !== option.id))} /> {option.label}
+			</label>)}
+			<button type="button" className="rounded border px-3 py-2" onClick={() => selectTargets(targets.length === resetOptions.length ? [] : resetOptions.map((option) => option.id))}>{targets.length === resetOptions.length ? "選択を解除" : "すべて選択"}</button>
+		</fieldset>}
 		<div role="note" className="rounded-lg border p-4 space-y-3" style={{ borderColor: "#b91c1c" }}>
 			<p className="font-semibold">この操作は取り消せません。</p>
-			<p>ホーム・固定ページ・お知らせの全記事（下書きを含む）と編集項目を削除し、初期データに置き換えます。メニュー、サイト名、紹介文も初期設定に戻し、お知らせメールの配信履歴・配信待ちデータを削除します。</p>
-			<p>ユーザー・管理者権限・認証設定、画像などのメディア、メール購読者は残ります。他のコレクションは変更しません。</p>
+			{targets.length ? <ul className="list-disc pl-6 space-y-2">{resetOptions.filter((option) => targets.includes(option.id)).map((option) => <li key={option.id}><strong>{option.label}：</strong>{option.description}</li>)}</ul> : <p>項目を選ぶと、初期化する内容をここに表示します。</p>}
+			<p>選択していない項目、ユーザー・管理者権限・認証設定、画像などのメディア、メール購読者は残ります。</p>
 			<p>必要なデータは、実行前にバックアップしてください。初期化中は記事の編集・公開を控えてください。</p>
 		</div>
 		{allowed && <div className="space-y-3">
 			<label className="block" htmlFor="seed-confirmation">実行する場合は「初期化」と入力してください。</label>
 			<input id="seed-confirmation" className="rounded border p-2" autoComplete="off" value={confirmation} disabled={busy} onChange={(event) => setConfirmation(event.target.value)} />
-			<button type="button" className="block rounded px-4 py-2 text-white" style={{ backgroundColor: "#b91c1c", opacity: busy || confirmation !== "初期化" ? 0.5 : 1 }} disabled={busy || confirmation !== "初期化"} onClick={reset}>{busy ? "初期化しています…" : "初期化する（seed）"}</button>
+			<button type="button" className="block rounded px-4 py-2 text-white" style={{ backgroundColor: "#b91c1c", opacity: busy || !targets.length || confirmation !== "初期化" ? 0.5 : 1 }} disabled={busy || !targets.length || confirmation !== "初期化"} onClick={reset}>{busy ? "初期化しています…" : "選択した項目を初期化する（seed）"}</button>
 		</div>}
 		{message && <p role="status" aria-live="polite">{message}</p>}
 	</section>;
