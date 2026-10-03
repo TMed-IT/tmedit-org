@@ -5,6 +5,34 @@
 
 import type { BylineSummary, ContentBylineCredit, TaxonomyTerm, PortableTextBlock } from "emdash";
 
+export interface Home {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  hero_headline?: string;
+  hero_subheadline?: string;
+  hero_cta_label?: string;
+  hero_cta_url?: string;
+  activities_headline?: string;
+  activities_subheadline?: string;
+  activities_items?: { "title": string; "description": string }[];
+  projects_headline?: string;
+  projects_subheadline?: string;
+  projects_organization?: string;
+  projects_github_url?: string;
+  projects_max?: number;
+  faq_headline?: string;
+  faq_subheadline?: string;
+  faq_items?: { "question": string; "answer": string }[];
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
 export interface New {
   id: string;
   slug: string | null;
@@ -38,6 +66,7 @@ export interface Page {
 
 declare module "emdash" {
   interface EmDashCollections {
+    home: Home;
     news: New;
     pages: Page;
   }

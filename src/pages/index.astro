@@ -1,5 +1,5 @@
 ---
-import { getEmDashCollection } from "emdash";
+import { getEmDashCollection, getEmDashEntry } from "emdash";
 import Base from "../layouts/Base.astro";
 import Hero from "../components/blocks/Hero.astro";
 import Activities from "../components/blocks/Activities.astro";
@@ -10,11 +10,22 @@ import { disableSharedCache, isCampusRequest } from "../lib/campus-access";
 import { homeContent } from "../lib/home-content";
 
 const campusRequest = await isCampusRequest(Astro.cookies);
-const firstNewsPage = await getEmDashCollection("news", {
-	status: "published",
-	orderBy: { published_at: "desc" },
-	limit: 25,
-});
+const [home, firstNewsPage] = await Promise.all([
+	getEmDashEntry("home", "home"),
+	getEmDashCollection("news", {
+		status: "published",
+		orderBy: { published_at: "desc" },
+		limit: 25,
+	}),
+]);
+if (home.error) {
+	if (home.error.name === "LiveEntryNotFoundError") return Astro.rewrite("/404");
+	throw home.error;
+}
+Astro.cache.set(home.cacheHint);
+const page = home.entry;
+if (!page) return Astro.rewrite("/404");
+const content = homeContent(page.data);
 if (firstNewsPage.error) throw firstNewsPage.error;
 Astro.cache.set(firstNewsPage.cacheHint);
 
@@ -38,10 +49,14 @@ while (latestNews.length < 3 && cursor) {
 disableSharedCache(Astro.cache, Astro.response.headers);
 ---
 
-<Base description="プログラミングやWeb開発を、仲間と一緒に試しながら学ぶ東邦大学医学部の学生コミュニティです。">
-	<Hero node={homeContent.hero} />
-	<Activities node={homeContent.activities} />
+<Base
+	title={page.data.title !== "ホーム" ? page.data.title : undefined}
+	description="プログラミングやWeb開発を、仲間と一緒に試しながら学ぶ東邦大学医学部の学生コミュニティです。"
+	content={{ collection: "home", id: page.data.id, slug: page.id }}
+>
+	<Hero node={content.hero} />
+	<Activities node={content.activities} />
 	<NewsPreview news={latestNews} />
-	<Projects node={homeContent.projects} />
-	<FAQ node={homeContent.faq} />
+	<Projects node={content.projects} />
+	<FAQ node={content.faq} />
 </Base>

@@ -21,7 +21,7 @@ pnpm build      # 本番ビルド
 | --- | --- |
 | `astro.config.mjs` | EmDash、認証、D1、R2、プラグインの設定 |
 | `wrangler.jsonc` | Worker・D1・KV `tmedit-org`、R2 `tmedit-org-media` の設定 |
-| `seed/seed.json` | `pages`・`news` のスキーマ、初期コンテンツ、メニュー |
+| `seed/seed.json` | `home`・`pages`・`news` のスキーマ、初期コンテンツ、メニュー |
 | `src/pages/index.astro` | ホームの活動紹介、お知らせ、プロジェクト、FAQ |
 | `src/pages/newsroom/` | お知らせの一覧と詳細 |
 | `src/pages/[slug].astro` | CMSの固定ページ。プライバシーポリシー、利用規約など |
@@ -43,7 +43,7 @@ pnpm build      # 本番ビルド
 - URLには `entry.id`（slug）、API呼び出しには `entry.data.id`（DBのULID）を使います。
 - CMSの画像フィールドは `{ src, alt }` 形式です。`emdash/ui` の `<Image image={...} />` で表示します。
 - `src/live.config.ts` はローダー登録用の共通コードです。変更しません。
-- ホームは `src/lib/home-content.ts` で管理し、CMSでは編集しません。既存DBは新しいseedで初期化する前提です。
+- ホームは専用コレクション `home` のスラッグ `home` の記事で編集します。ホーム用フィールドを `pages` に追加しません。既存DBは新しいseedで初期化する前提です。
 - メニューの `primary`・`footer_product`・`footer_company`・`footer_support` はseedとDBの識別子です。改名する場合は既存DBの移行も考慮してください。
 - 色や文字の調整は `tokens.css` と `src/styles/theme.css` で行います。共通の `src/styles/tokens.css` や `Base.astro` を見た目の変更目的で編集しません。
 
