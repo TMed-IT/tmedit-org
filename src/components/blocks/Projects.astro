@@ -25,17 +25,27 @@ const organization = node.organization?.trim() || "tmed-it";
 const githubUrl = node.githubUrl?.trim() || `https://github.com/${organization}`;
 const maxProjects = Math.max(1, Math.min(Number(node.maxProjects) || 5, 12));
 let projects: GithubRepository[] = [];
+let fetchFailed = false;
 
 try {
 	const response = await fetch(`https://api.github.com/orgs/${encodeURIComponent(organization)}/repos?type=public&per_page=100`, {
-		headers: { Accept: "application/vnd.github+json" },
+		headers: {
+			Accept: "application/vnd.github+json",
+			"User-Agent": "tmedit-org",
+		},
+		signal: AbortSignal.timeout(5000),
 	});
 	if (response.ok) {
 		projects = ((await response.json()) as GithubRepository[])
 			.toSorted((a, b) => b.stargazers_count - a.stargazers_count)
 			.slice(0, maxProjects);
+	} else {
+		fetchFailed = true;
+		console.error("GitHub repository fetch failed", { organization, status: response.status });
 	}
 } catch {
+	fetchFailed = true;
+	console.error("GitHub repository fetch failed", { organization });
 	projects = [];
 }
 
@@ -81,8 +91,8 @@ const formatDate = (value: string) => new Intl.DateTimeFormat("ja-JP", {
 		) : (
 			<div class="projects-empty reveal" data-reveal>
 				<div>
-					<h3>公開準備中です</h3>
-					<p>新しいプロジェクトを公開次第、こちらに追加します。</p>
+					<h3>{fetchFailed ? "プロジェクト一覧を取得できませんでした" : "公開準備中です"}</h3>
+					<p>{fetchFailed ? "下のリンクからGitHubの公開プロジェクトをご覧ください。" : "新しいプロジェクトを公開次第、こちらに追加します。"}</p>
 				</div>
 			</div>
 		)}
