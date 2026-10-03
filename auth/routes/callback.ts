@@ -14,6 +14,7 @@ import {
   PROVIDER_ID,
   STATE_STORAGE_CONFIG,
 } from "../shared.ts";
+import { getInternalAvatarUrl } from "../avatar.ts";
 
 export const prerender = false;
 
@@ -70,8 +71,9 @@ export const GET: APIRoute = async ({ locals, url, session, redirect }) => {
   }
 
   try {
+    const authOrigin = getInternalAuthOrigin();
     const tokenResponse = await fetch(
-      new URL("/auth/emdash/token", getInternalAuthOrigin()),
+      new URL("/auth/emdash/token", authOrigin),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,6 +112,7 @@ export const GET: APIRoute = async ({ locals, url, session, redirect }) => {
       .limit(1)
       .executeTakeFirst();
     const isFirstUser = existingInternalAccount === undefined;
+    const avatarUrl = await getInternalAvatarUrl(internalUser.email, authOrigin);
 
     let user = await findOrCreateOAuthUser(
       adapter,
@@ -118,7 +121,7 @@ export const GET: APIRoute = async ({ locals, url, session, redirect }) => {
         id: internalUser.id,
         email: internalUser.email,
         name: internalUser.name,
-        avatarUrl: null,
+        avatarUrl,
         emailVerified: true,
       },
       async () => ({
@@ -135,6 +138,9 @@ export const GET: APIRoute = async ({ locals, url, session, redirect }) => {
     }
 
     if (user.disabled) return redirect(errorRedirect("account_disabled"));
+    if (user.avatarUrl !== avatarUrl) {
+      await adapter.updateUser(user.id, { avatarUrl });
+    }
     if (setupPending) await finalizeSetup(emdash.db);
     session?.set("user", { id: user.id });
     return redirect("/_emdash/admin");

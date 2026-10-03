@@ -4,7 +4,7 @@ import { d1, r2 } from "@emdash-cms/cloudflare";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { homeFieldWidgets } from "./src/plugins/site-settings/home-sections.mjs";
-import { internalAuth } from "./auth/internal/index.ts";
+import { internalAuth } from "./auth/index.ts";
 
 const cloudflareEmailPlugin = {
   id: "cloudflare-email",

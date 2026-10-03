@@ -62,6 +62,7 @@ internal認証で最初にログインしたユーザーにはEmDashの管理者
 以降の新規ユーザーは、既定でAuthorになります。
 `AUTH_DEFAULT_ROLE` で新規ユーザーの既定ロールを変更できます。
 以降のログインでは、既存ユーザーのロールは変更しません。
+管理画面のアバターにはauthで保存した画像を使います。既存ユーザーの画像は、再ログイン時に更新します。
 
 ## ページとお知らせを編集する
 
@@ -119,7 +120,7 @@ verifyの障害時は503を返し、Cookieは保持します。限定コンテ�
 | `src/pages/` | ページとAPIの処理 |
 | `src/components/` | ホームページなどの表示部品 |
 | `src/styles/theme.css` | 色や文字などのデザイン調整 |
-| `auth/internal/` | internal認証サービスとの連携 |
+| `auth/` | internal認証サービスとの連携 |
 | `src/plugins/` | メール送信、お知らせ通知、サイト初期化の管理画面 |
 | `src/lib/verify-client.ts` | verifyとの認証連携 |
 | `src/pages/auth/verify/` | 在籍確認の開始とコールバック |
