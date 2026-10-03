@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { Role } from "@emdash-cms/auth";
-import { readResetConfirmation, resetAuthorization, resetSiteContent } from "../../../../lib/seed-reset.mjs";
-import { ensureSubscriptionTables } from "../../../../lib/news-subscriptions";
+import { readResetConfirmation, resetAuthorization, resetSiteContent } from "../../lib/seed-reset.mjs";
+import { ensureSubscriptionTables } from "../../lib/news-subscriptions";
 
 export const prerender = false;
 const reply = (status: number, message: string) => Response.json({ message }, {

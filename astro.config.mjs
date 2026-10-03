@@ -45,6 +45,18 @@ export default defineConfig({
   },
   integrations: [
     react(),
+    {
+      name: "site-settings-api",
+      hooks: {
+        "astro:config:setup": ({ injectRoute }) => {
+          injectRoute({
+            pattern: "/_emdash/api/site-settings/seed",
+            entrypoint: new URL("./src/plugins/site-settings/seed.ts", import.meta.url),
+            prerender: false,
+          });
+        },
+      },
+    },
     emdash({
       // SITE_URL stays production-facing for email links. Keep EmDash's
       // login/callback origin local while running the development server.

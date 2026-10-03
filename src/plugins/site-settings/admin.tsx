@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { permissionErrorMessage } from "./messages.mjs";
 
 const endpoint = "/_emdash/api/site-settings/seed";
 
@@ -9,9 +10,9 @@ function SettingsPage() {
 	const [message, setMessage] = useState("");
 	useEffect(() => {
 		const controller = new AbortController();
-		fetch(endpoint, { signal: controller.signal }).then(async (response) => {
+		fetch(endpoint, { signal: controller.signal, headers: { "X-EmDash-Request": "1" } }).then((response) => {
 			setAllowed(response.ok);
-			if (!response.ok) setMessage("この操作は管理者だけが実行できます。");
+			if (!response.ok) setMessage(permissionErrorMessage(response.status));
 		}).catch(() => { if (!controller.signal.aborted) setMessage("権限を確認できませんでした。画面を再読み込みしてください。"); });
 		return () => controller.abort();
 	}, []);

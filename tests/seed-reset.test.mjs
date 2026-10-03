@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import config from "../astro.config.mjs";
 import { createDialect } from "emdash/db/sqlite";
 import { runMigrations } from "emdash/db";
 import { applySeed } from "emdash/seed";
 import { resetSiteContent } from "../src/lib/seed-reset.mjs";
+import { permissionErrorMessage } from "../src/plugins/site-settings/messages.mjs";
 import seed from "../seed/seed.json" with { type: "json" };
 
 const require = createRequire(import.meta.resolve("emdash/db"));
@@ -12,7 +15,7 @@ const { Kysely, CompiledQuery } = require("kysely");
 const { build } = createRequire(createRequire(import.meta.url).resolve("wrangler"))("esbuild");
 globalThis.__seedTestEnv = {};
 const { outputFiles } = await build({
-  entryPoints: ["src/pages/_emdash/api/site-settings/seed.ts"],
+  entryPoints: ["src/plugins/site-settings/seed.ts"],
   bundle: true, write: false, format: "esm", platform: "node",
   packages: "external",
   plugins: [{ name: "seed-test-bindings", setup(build) {
@@ -57,6 +60,17 @@ function context(db, overrides = {}) {
   };
 }
 
+test("the seed endpoint is explicitly registered under the protected EmDash API path", async () => {
+  const integration = config.integrations.find((integration) => integration.name === "site-settings-api");
+  assert.ok(integration, "Astro ignores _emdash directories unless the route is injected");
+  const routes = [];
+  await integration.hooks["astro:config:setup"]({ injectRoute: (route) => routes.push(route) });
+  const route = routes.find((route) => route.pattern === "/_emdash/api/site-settings/seed");
+  assert.ok(route);
+  assert.equal(fileURLToPath(route.entrypoint), fileURLToPath(new URL("../src/plugins/site-settings/seed.ts", import.meta.url)));
+  assert.equal(route.prerender, false);
+});
+
 test("reset API rejects non-admins, foreign origins, missing header, and invalid confirmation before DB access", async () => {
   for (const role of [undefined, 10, 40]) {
     const ctx = context(null);
@@ -76,6 +90,16 @@ test("reset API rejects non-admins, foreign origins, missing header, and invalid
     assert.equal((await route.POST(ctx)).status, 400);
   }
   assert.equal((await route.GET({ locals: {} })).status, 403);
+  assert.equal((await route.GET({ locals: { user: { role: 50 } } })).status, 200);
+});
+
+test("missing routes and server failures are not reported as insufficient administrator permissions", () => {
+  for (const status of [404, 500, 503]) {
+    assert.doesNotMatch(permissionErrorMessage(status), /管理者だけ/);
+    assert.match(permissionErrorMessage(status), new RegExp(`HTTP ${status}`));
+  }
+  assert.match(permissionErrorMessage(401), /ログイン/);
+  assert.match(permissionErrorMessage(403), /管理者だけ/);
 });
 
 test("seed reset replaces content, drafts, revisions and menus while preserving identity and unrelated data; rerunning is safe", async () => {
