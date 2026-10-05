@@ -182,6 +182,25 @@ CLOUDFLARE_SECRETS_STORE_ID=YOUR_STORE_ID pnpm deploy
 このコマンドはビルド後にWorkerをデプロイします。
 公開先や認証サービスを変更した場合は、認証サービス側の許可設定と戻り先URLも確認してください。
 
+### EmDashを定期更新する
+
+[Update EmDash](./.github/workflows/update-emdash.yml) が毎月1日9:00（日本時間）に
+`emdash` と、直接依存する `@emdash-cms/*` の最新安定版を確認します。
+メジャーバージョンの更新も対象です。
+変更があれば型チェック・テスト・ビルドを実行し、成功した場合に更新PRを作成します。
+未マージの更新PRがある場合は、追加更新を同じPRに反映します。
+更新がない回はPRをそのまま残し、自動クローズやブランチ削除は行いません。
+マージ後は自動デプロイされます。
+GitHubのActions画面から `Update EmDash` を選び、`main` で手動実行もできます。
+
+追加のSecretは不要です。リポジトリの Settings → Actions → General → Workflow permissions で
+「Allow GitHub Actions to create and approve pull requests」を有効にしてください。
+Organizationの設定で制限されている場合は、そちらでも許可が必要です。
+設定の詳細は[PR作成Actionの説明](https://github.com/peter-evans/create-pull-request#workflow-permissions)を参照できます。
+
+更新PRには、更新ワークフローでの検証結果を載せます。
+`GITHUB_TOKEN` で作成したPRは通常のPR用ワークフローを起動しないため、更新処理内で検証を済ませます。
+
 ### mainへのpushで自動デプロイする
 
 [GitHub Actionsのワークフロー](./.github/workflows/deploy.yml)で、
