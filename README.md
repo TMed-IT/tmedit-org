@@ -41,6 +41,13 @@ pnpm dev
 | `pnpm db:migrate` | 本番D1に未適用のSQLマイグレーションを適用する |
 | `pnpm db:migration:create 名前` | 次の番号のSQLマイグレーションを作成する |
 
+### フォントの配信
+
+公開サイトのZen Kaku Gothic New・Space Groteskと、管理画面のNoto Sansは、
+バージョンを固定したFontsourceのnpmパッケージから配信します。
+フォント設定は `src/fonts.mjs` にまとめ、ビルド中にGoogle Fontsへ接続しません。
+依存パッケージのインストール後は、フォント取得の通信障害でビルドが停止することを防げます。
+
 ## 管理画面にログインする
 
 サイトの「管理画面」リンクから、internal認証サービスへ移動します。

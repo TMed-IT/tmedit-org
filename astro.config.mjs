@@ -1,10 +1,11 @@
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { d1, r2 } from "@emdash-cms/cloudflare";
-import { defineConfig, fontProviders } from "astro/config";
+import { defineConfig } from "astro/config";
 import emdash from "emdash/astro";
 import { homeFieldWidgets } from "./src/plugins/site-settings/home-sections.mjs";
 import { internalAuth } from "./auth/index.ts";
+import { fonts } from "./src/fonts.mjs";
 
 const cloudflareEmailPlugin = {
   id: "cloudflare-email",
@@ -60,6 +61,8 @@ export default defineConfig({
       },
     },
     emdash({
+      // Register the same admin font from local npm files below.
+      fonts: false,
       // SITE_URL stays production-facing for email links. Keep EmDash's
       // login/callback origin local while running the development server.
       siteUrl: process.env.NODE_ENV === "development" ? "http://localhost:4321" : undefined,
@@ -73,21 +76,6 @@ export default defineConfig({
       ],
     }),
   ],
-  fonts: [
-    {
-      provider: fontProviders.google(),
-      name: "Zen Kaku Gothic New",
-      cssVariable: "--font-body",
-      weights: [400, 500, 700, 900],
-      fallbacks: ["sans-serif"],
-    },
-    {
-      provider: fontProviders.google(),
-      name: "Space Grotesk",
-      cssVariable: "--font-outlier",
-      weights: [500, 600, 700],
-      fallbacks: ["sans-serif"],
-    },
-  ],
+  fonts,
   devToolbar: { enabled: false },
 });
