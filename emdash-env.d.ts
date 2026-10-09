@@ -43,6 +43,7 @@ export interface Page {
   status: string;
   title: string;
   content?: PortableTextBlock[];
+  document?: { id: string; url?: string; src?: string; filename?: string; mimeType?: string; size?: number; provider?: string; meta?: Record<string, unknown> };
   campus_only: boolean;
   createdAt: Date;
   updatedAt: Date;

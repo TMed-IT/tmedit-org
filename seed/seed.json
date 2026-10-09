@@ -104,6 +104,14 @@
           "type": "portableText"
         },
         {
+          "slug": "document",
+          "label": "添付PDF",
+          "type": "file",
+          "validation": {
+            "allowedMimeTypes": ["application/pdf"]
+          }
+        },
+        {
           "slug": "campus_only",
           "label": "学内限定",
           "type": "boolean",

@@ -3,6 +3,7 @@ import { verificationPath } from "../lib/verify-client";
 import { decodeSlug, getEmDashEntry } from "emdash";
 import { PortableText } from "emdash/ui";
 import Base from "../layouts/Base.astro";
+import PdfAttachment from "../components/PdfAttachment.astro";
 import { disableSharedCache, isCampusRequest } from "../lib/campus-access";
 
 const slug = decodeSlug(Astro.params.slug);
@@ -30,6 +31,10 @@ const descriptions: Record<string, string> = {
 	privacy: "東邦大学医学部 IT部ウェブサイトにおける個人情報の取り扱い方針です。",
 	terms: "東邦大学医学部 IT部ウェブサイトの利用条件です。",
 };
+
+const documentUrl = new URL(`/api/pages/${encodeURIComponent(page.id)}/document`, Astro.url);
+const previewToken = Astro.url.searchParams.get("_preview");
+if (previewToken) documentUrl.searchParams.set("_preview", previewToken);
 ---
 
 <Base
@@ -52,6 +57,11 @@ const descriptions: Record<string, string> = {
 			<div class="legal-page__measure legal-page__prose" {...page.edit.content}>
 				<PortableText value={page.data.content} />
 			</div>
+			{page.data.document && (
+				<div class="legal-page__measure" {...page.edit.document}>
+					<PdfAttachment file={page.data.document} url={documentUrl.pathname + documentUrl.search} />
+				</div>
+			)}
 		</div>
 	</article>
 </Base>

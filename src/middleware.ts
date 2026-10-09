@@ -2,6 +2,8 @@ import { VerifyInvalidGrant, VerifyUnavailable } from "./lib/verify-client";
 import type { APIContext } from "astro";
 import { defineMiddleware } from "astro:middleware";
 import { OptionsRepository } from "emdash";
+import { env } from "cloudflare:workers";
+import { isPageAttachmentKey } from "./lib/page-attachments";
 
 const AUTH_START_PATH = "/_emdash/api/auth/internal/authorize";
 const EMAIL_DELIVER_HOOK = "email:deliver";
@@ -45,6 +47,29 @@ export const onRequest = defineMiddleware(async (context, next) => {
   await ensureDevEmailProvider(context);
 
   const { pathname } = context.url;
+
+  // The standard media endpoint is public. Page PDFs must use the page-scoped endpoint.
+  if (pathname.startsWith("/_emdash/api/media/file/")) {
+    let key = pathname.slice("/_emdash/api/media/file/".length);
+    try {
+      for (let layer = 0; layer < 3; layer++) {
+        const decoded = decodeURIComponent(key);
+        if (decoded === key) break;
+        key = decoded;
+      }
+    } catch {
+      return new Response("File not found", { status: 404, headers: { "Cache-Control": "private, no-store" } });
+    }
+    if (await isPageAttachmentKey(env.DB, key)) {
+      context.cache.set(false);
+      if (!context.locals.user) {
+        return new Response("File not found", { status: 404, headers: { "Cache-Control": "private, no-store" } });
+      }
+      const mediaResponse = await next();
+      mediaResponse.headers.set("Cache-Control", "private, no-store");
+      return mediaResponse;
+    }
+  }
 
   if (
     pathname === "/login" ||

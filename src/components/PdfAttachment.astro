@@ -1,0 +1,33 @@
+---
+import type { FileValue } from "emdash";
+
+interface Props {
+	file: FileValue;
+	url: string;
+}
+
+const { file, url } = Astro.props;
+const filename = file.filename || "添付資料.pdf";
+const downloadUrl = new URL(url, Astro.url);
+downloadUrl.searchParams.set("download", "1");
+---
+
+<section class="pdf-attachment" aria-labelledby="pdf-attachment-title">
+	<header class="pdf-attachment__header">
+		<div>
+			<h2 id="pdf-attachment-title">添付PDF</h2>
+			<p class="pdf-attachment__filename">{filename}</p>
+		</div>
+		<div class="pdf-attachment__actions">
+			<a href={url} target="_blank" rel="noopener noreferrer" aria-label="添付PDFを新しいタブで開く">別タブで開く</a>
+			<a href={downloadUrl.pathname + downloadUrl.search} download={filename}>ダウンロード</a>
+		</div>
+	</header>
+	<iframe
+		src={url}
+		title={`${filename}のPDFプレビュー`}
+		loading="lazy"
+		referrerpolicy="no-referrer"
+	></iframe>
+	<p class="pdf-attachment__help">プレビューが表示されない場合は、「別タブで開く」または「ダウンロード」からご覧ください。</p>
+</section>
