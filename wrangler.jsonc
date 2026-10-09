@@ -34,6 +34,8 @@
     {
       "binding": "DB",
       "database_name": "tmedit-org",
+      "database_id": "d7c5d228-bc3d-4f64-80a0-61edaa4ee035",
+      "migrations_dir": "migrations",
     },
   ],
   "r2_buckets": [

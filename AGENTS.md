@@ -11,6 +11,7 @@ pnpm types:generate # 現在のseedからEmDashの型を生成
 pnpm typecheck  # seedから型を再生成し、Astro・TypeScriptの型確認
 pnpm test       # verify連携のテスト
 pnpm build      # 本番ビルド
+pnpm db:migrate # 本番D1の未適用SQLを適用（ローカルDBではない）
 ```
 
 管理画面は `http://localhost:4321/_emdash/admin` です。
@@ -26,6 +27,7 @@ pnpm build      # 本番ビルド
 | `astro.config.mjs` | EmDash、認証、D1、R2、プラグインの設定 |
 | `wrangler.jsonc` | Worker・D1・KV `tmedit-org`、R2 `tmedit-org-media` の設定 |
 | `seed/seed.json` | `home`・`pages`・`news` のスキーマ、初期コンテンツ、メニュー |
+| `migrations/` | 既存の本番D1に適用するサイト固有のSQLマイグレーション |
 | `src/pages/index.astro` | ホームの活動紹介、お知らせ、プロジェクト、FAQ |
 | `src/pages/newsroom/` | お知らせの一覧と詳細 |
 | `src/pages/[slug].astro` | CMSの固定ページ。プライバシーポリシー、利用規約など |
@@ -48,6 +50,8 @@ pnpm build      # 本番ビルド
 - CMSの画像フィールドは `{ src, alt }` 形式です。`emdash/ui` の `<Image image={...} />` で表示します。
 - `src/live.config.ts` はローダー登録用の共通コードです。変更しません。
 - ホームは専用コレクション `home` のスラッグ `home` の記事で編集します。ホーム用フィールドを `pages` に追加しません。既存DBは新しいseedで初期化する前提です。
+- 本番のCMSスキーマやデータ構造を変更するときは、seedと合わせて `migrations/` に番号付きSQLを追加します。既存記事を保持して変更し、実行済みファイルは変更しません。フィールド追加では `_emdash_fields` と `ec_*` のカラム、必要なメディア参照インデックスの更新を揃え、変更前のDBで検証します。
+- mainへのpushは型確認・テスト・ビルド後、`pnpm deploy` はビルド後、Workerのデプロイ前に未適用SQLを実行します。適用に失敗したらデプロイは停止します。EmDash本体のマイグレーションとサイト固有のD1適用履歴は別に管理します。
 - メニューの `primary`・`footer_product`・`footer_company`・`footer_support` はseedとDBの識別子です。改名する場合は既存DBの移行も考慮してください。
 - 色や文字の調整は `tokens.css` と `src/styles/theme.css` で行います。共通の `src/styles/tokens.css` や `Base.astro` を見た目の変更目的で編集しません。
 

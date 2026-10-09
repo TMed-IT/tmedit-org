@@ -57,7 +57,7 @@ jobs:
       - name: Check types
         run: pnpm typecheck
 
-      - name: Test verification flow
+      - name: Run tests including CMS migrations
         run: pnpm test
 
       - name: Build
@@ -67,6 +67,12 @@ jobs:
         env:
           CLOUDFLARE_SECRETS_STORE_ID: ${{ vars.CLOUDFLARE_SECRETS_STORE_ID }}
         run: node scripts/configure-verify-store.mjs
+
+      - name: Apply CMS migrations to production D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm db:migrate
 
       - name: Deploy
         env:

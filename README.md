@@ -37,7 +37,9 @@ pnpm dev
 | `pnpm typecheck` | seedから型を生成し、Astro・TypeScriptの型を確認する |
 | `pnpm build` | seedから型を生成し、本番用にビルドする |
 | `pnpm preview` | ビルド結果をローカルで確認する |
-| `pnpm deploy` | ビルドしてCloudflare Workersへデプロイする |
+| `pnpm deploy` | ビルド・本番D1のマイグレーション後、Cloudflare Workersへデプロイする |
+| `pnpm db:migrate` | 本番D1に未適用のSQLマイグレーションを適用する |
+| `pnpm db:migration:create 名前` | 次の番号のSQLマイグレーションを作成する |
 
 ## 管理画面にログインする
 
@@ -108,10 +110,9 @@ seedを変更してコミット・デプロイするだけでは、既存DBは�
 node scripts/add-page-document.mjs
 ```
 
-本番はコードをデプロイした後、管理者のAPIトークンを `EMDASH_TOKEN` 環境変数に設定し、
-`node scripts/add-page-document.mjs https://tmedit.org` を実行します。
-管理画面の「Content Types」で `pages` に `document` フィールド（型 `file`、ラベル「添付PDF」、
-許可MIME型 `application/pdf`）を追加する方法も使えます。追加済みの場合、スクリプトは変更しません。
+本番の既存DBには `migrations/0001_page_document.sql` で添付欄を追加します。
+2026年10月9日にWrangler経由で適用済みです。以降はmainへのpushと `pnpm deploy` で
+未適用のマイグレーションだけを自動実行するため、本番での手動追加やEmDash APIトークンは不要です。
 
 添付PDFはページ専用のURLから配信します。ページを非公開にするとPDFも閲覧できず、
 学内限定ページではプレビュー・ダウンロードにもverifyの在籍確認が必要です。
@@ -214,7 +215,7 @@ verify側にはクライアントID `tmedit` と戻り先 `https://tmedit.org/au
 CLOUDFLARE_SECRETS_STORE_ID=YOUR_STORE_ID pnpm deploy
 ```
 
-このコマンドはビルド後にWorkerをデプロイします。
+このコマンドはビルド後に本番D1の未適用マイグレーションを実行し、成功したらWorkerをデプロイします。
 公開先や認証サービスを変更した場合は、認証サービス側の許可設定と戻り先URLも確認してください。
 
 ### EmDashを定期更新する
@@ -239,9 +240,39 @@ Organizationの設定で制限されている場合は、そちらでも許可�
 ### mainへのpushで自動デプロイする
 
 [GitHub Actionsのワークフロー](./.github/workflows/deploy.yml)で、
-`main` へのpush後に型確認・認証テスト・ビルド・デプロイを実行します。
+`main` へのpush後に型確認・テスト・ビルド・本番D1のマイグレーション・デプロイを実行します。
 GitHubのActions画面からも、`main` を選んで手動実行できます。
 同時に複数のデプロイは実行しません。
+
+### CMSスキーマ変更を自動適用する
+
+既存DBへの変更は `migrations/` の番号付きSQLで管理します。
+Wranglerが `d1_migrations` に適用履歴を記録し、次回以降は適用済みのファイルをスキップします。
+EmDash本体の内部マイグレーションとは別の履歴です。
+SQLが失敗した場合、そのファイルの変更はロールバックされ、Workerのデプロイも停止します。
+複数ファイルのうち先に成功した分は残るので、原因を修正して再実行してください。
+
+今後フィールドなどを追加する場合は、次の手順で進めます。
+
+1. `pnpm db:migration:create add_example_field` でSQLファイルを作成する。
+2. 既存DBへの変更を書く。フィールド追加は `_emdash_fields` の定義と `ec_*` のカラムを揃え、メディア参照インデックスなどの関連状態もEmDashの仕様に合わせて更新する。
+3. 新規DB用の `seed/seed.json` を更新し、変更前のスキーマを使ったテストで既存記事・履歴が保持されることを確認する。
+4. `pnpm typecheck`・`pnpm test`・`pnpm build` を通し、seed・SQL・コード・生成した型をまとめてコミットする。
+5. mainへpushすると本番に自動適用される。
+
+適用済みSQLは編集せず、新しい番号のSQLで変更します。
+デプロイ前に実行するため、その変更は稼働中の旧コードでも使える追加から始めてください。
+フィールド削除や型変更は、データ移行とコード変更を段階的に行います。
+空のDBは先にEmDashを起動して内部スキーマとseedを初期化します。
+最新seedや管理画面ですでに同じ変更が入っているDBは、定義・カラムを確認してから
+対応するSQLを適用済みとして扱う必要があり、既存データを初期化して合わせることはしません。
+
+手元から本番だけ先に反映する場合は `pnpm db:migrate` を使います。
+このコマンドは `--remote` を指定しており、ローカルDBには適用しません。
+ビルドで生成される設定との混同を避けるため、`--config wrangler.jsonc` を明示し、
+本番D1のID `d7c5d228-bc3d-4f64-80a0-61edaa4ee035` に接続先を固定しています。
+GitHub Actionsでは既存の `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID` を使います。
+本番D1への書き込みがあるため、APIトークンには対象アカウントの `D1: Edit` 権限が必要です。
 
 GitHub Actionsでは、次のSecretとVariablesを使います。
 

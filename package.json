@@ -11,7 +11,9 @@
     "dev": "astro dev",
     "build": "pnpm types:generate && astro build",
     "preview": "astro preview",
-    "deploy": "pnpm build && node scripts/configure-verify-store.mjs && wrangler deploy",
+    "deploy": "pnpm build && node scripts/configure-verify-store.mjs && pnpm db:migrate && wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply tmedit-org --remote --config wrangler.jsonc",
+    "db:migration:create": "wrangler d1 migrations create tmedit-org --config wrangler.jsonc",
     "types:generate": "node scripts/generate-emdash-types.mjs",
     "typecheck": "pnpm types:generate && astro check",
     "test": "node --test tests/*.test.mjs"
