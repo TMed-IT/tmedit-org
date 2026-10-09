@@ -33,8 +33,9 @@ pnpm dev
 | --- | --- |
 | `pnpm dev` | 開発サーバーを起動する |
 | `pnpm test` | 在籍確認の連携をテストする |
-| `pnpm typecheck` | Astro・TypeScriptの型を確認する |
-| `pnpm build` | 本番用にビルドする |
+| `pnpm types:generate` | 現在のseedからEmDashの型を生成する |
+| `pnpm typecheck` | seedから型を生成し、Astro・TypeScriptの型を確認する |
+| `pnpm build` | seedから型を生成し、本番用にビルドする |
 | `pnpm preview` | ビルド結果をローカルで確認する |
 | `pnpm deploy` | ビルドしてCloudflare Workersへデプロイする |
 
@@ -161,6 +162,11 @@ APIや設定の仕様を調べるときは、[EmDashのドキュメント](https
 ソースコード、`seed/seed.json`、`pnpm-lock.yaml`、設定ファイルをコミットします。
 ルートの型定義 `emdash-env.d.ts` と `worker-configuration.d.ts` も管理対象です。
 型定義を更新した場合は、対応するスキーマや設定の変更と一緒にコミットしてください。
+`pnpm typecheck` と `pnpm build` は、実行前に現在のseedから `emdash-env.d.ts` を再生成します。
+生成には一時的なメモリ上のDBを使い、既存のローカルDBや本番DBは変更しません。
+開発サーバーが古いローカルDBから型を生成した場合も、コミット前に `pnpm typecheck` を実行し、
+再生成された型定義を含めてコミットしてください。
+EmDashの自動更新PRにも、更新したパッケージで生成した型定義を含めます。
 
 依存パッケージ、ビルド成果物、生成メタデータ、Wranglerのローカルデータ、
 アップロードファイル、キャッシュ、ログ、ローカルのレビュー記録（`docs/tmp/review/`）は `.gitignore` で除外します。

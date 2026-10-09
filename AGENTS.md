@@ -7,13 +7,17 @@ AstroとEmDash CMSで活動紹介、お知らせ、固定ページを提供し�
 
 ```bash
 pnpm dev        # マイグレーション、seed、型生成を含む開発サーバー
-pnpm typecheck  # Astro・TypeScriptの型確認
+pnpm types:generate # 現在のseedからEmDashの型を生成
+pnpm typecheck  # seedから型を再生成し、Astro・TypeScriptの型確認
 pnpm test       # verify連携のテスト
 pnpm build      # 本番ビルド
 ```
 
 管理画面は `http://localhost:4321/_emdash/admin` です。
 デプロイの設定と必要なシークレットはREADMEを確認してください。
+`emdash-env.d.ts` は古いローカルDBのスキーマを反映することがあります。
+コミット前に `pnpm typecheck` を実行し、現在のseedから再生成した型定義を含めてください。
+型チェックの失敗を確認した場合は、原因を解消してからコミットしてください。
 
 ## 主なファイル
 

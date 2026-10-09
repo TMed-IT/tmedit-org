@@ -9,10 +9,11 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "pnpm types:generate && astro build",
     "preview": "astro preview",
-    "deploy": "astro build && node scripts/configure-verify-store.mjs && wrangler deploy",
-    "typecheck": "astro check",
+    "deploy": "pnpm build && node scripts/configure-verify-store.mjs && wrangler deploy",
+    "types:generate": "node scripts/generate-emdash-types.mjs",
+    "typecheck": "pnpm types:generate && astro check",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
