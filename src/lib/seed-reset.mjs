@@ -3,6 +3,7 @@ import { SchemaRegistry, invalidateCollectionCache, invalidateSchemaObjectCache,
 import { applySeed, validateSeed } from "emdash/seed";
 import seed from "../../seed/seed.json" with { type: "json" };
 import { validResetTargets } from "../plugins/site-settings/reset-options.mjs";
+import { installSlugConstraints } from "./slug-policy.mjs";
 
 export function resetAuthorization(request, user) {
 	if (!user || user.role !== Role.ADMIN) return 403;
@@ -82,6 +83,7 @@ export async function resetSiteContent(db, targets, beforeReset = async () => {}
 			await db.deleteFrom("_emdash_menus").where("id", "=", menu.id).execute();
 		}
 		await applySeed(db, selectedSeed, { includeContent: true, onConflict: "update" });
+		if (slugs.includes("pages") || slugs.includes("news")) await installSlugConstraints(db);
 		return { tags };
 	} finally {
 		for (const slug of slugs) invalidateCollectionCache(slug);

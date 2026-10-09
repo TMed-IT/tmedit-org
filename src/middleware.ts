@@ -4,6 +4,7 @@ import { defineMiddleware } from "astro:middleware";
 import { OptionsRepository } from "emdash";
 import { env } from "cloudflare:workers";
 import { isPageAttachmentKey } from "./lib/page-attachments";
+import { validateSlugRequest } from "./lib/slug-validation";
 
 const AUTH_START_PATH = "/_emdash/api/auth/internal/authorize";
 const EMAIL_DELIVER_HOOK = "email:deliver";
@@ -98,6 +99,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   try {
+    if (context.locals.user && pathname.startsWith("/_emdash/api/")) {
+      const invalidSlug = await validateSlugRequest(context.request, env.DB);
+      if (invalidSlug) return invalidSlug;
+    }
     return await next();
   } catch (error) {
     if (error instanceof VerifyInvalidGrant) {
