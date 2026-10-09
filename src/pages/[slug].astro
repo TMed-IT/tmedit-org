@@ -1,140 +1,37 @@
 ---
+import { decodeSlug } from "emdash";
+import PageContent from "../components/PageContent.astro";
+import CategoryArchive from "../components/CategoryArchive.astro";
+import { getCategoryArchive } from "../lib/category-archive";
+import { getPageRoute, pageHref } from "../lib/page-route";
+import { disableSharedCache, isCampusRequest, privateRedirect } from "../lib/campus-access";
 import { verificationPath } from "../lib/verify-client";
-import { decodeSlug, getEmDashEntry } from "emdash";
-import { PortableText } from "emdash/ui";
-import Base from "../layouts/Base.astro";
-import PdfAttachment from "../components/PdfAttachment.astro";
-import { disableSharedCache, isCampusRequest } from "../lib/campus-access";
 
 const slug = decodeSlug(Astro.params.slug);
-if (!slug) return Astro.redirect("/404");
+if (!slug) return Astro.rewrite("/404");
 
-const result = await getEmDashEntry("pages", slug);
-const { entry: page, error, cacheHint } = result;
-if (error) {
-	if (error instanceof Error && error.name === "LiveEntryNotFoundError") {
-		return Astro.redirect("/404");
+// Existing fixed pages take precedence when a category has the same slug.
+const route = await getPageRoute(slug, undefined, Astro.currentLocale);
+const archive = route ? null : await getCategoryArchive(slug, Astro.cookies, Astro.currentLocale);
+if (!route && !archive) return Astro.rewrite("/404");
+
+if (route) {
+	Astro.cache.set(route.cacheHint);
+	if (route.page.data.campus_only) {
+		disableSharedCache(Astro.cache, Astro.response.headers);
+		Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+		if (!(await isCampusRequest(Astro.cookies))) return privateRedirect(verificationPath(Astro.url), Astro.response.headers);
 	}
-	throw error;
-}
-if (!page) return Astro.redirect("/404");
-
-Astro.cache.set(cacheHint);
-
-if (page.data.campus_only) {
+	const path = pageHref(route.page.id, route.page.data.terms?.category);
+	if (path !== `/${encodeURIComponent(route.page.id)}`) {
+		// Category assignments can change, so this redirect must not be permanent.
+		disableSharedCache(Astro.cache, Astro.response.headers);
+		return privateRedirect(path + Astro.url.search, Astro.response.headers);
+	}
+} else if (archive) {
+	Astro.cache.set(archive.cacheHint);
 	disableSharedCache(Astro.cache, Astro.response.headers);
-	Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
-	if (!(await isCampusRequest(Astro.cookies))) return Astro.redirect(verificationPath(Astro.url));
 }
-
-const descriptions: Record<string, string> = {
-	privacy: "東邦大学医学部 IT部ウェブサイトにおける個人情報の取り扱い方針です。",
-	terms: "東邦大学医学部 IT部ウェブサイトの利用条件です。",
-};
-
-const documentUrl = new URL(`/api/pages/${encodeURIComponent(page.id)}/document`, Astro.url);
-const previewToken = Astro.url.searchParams.get("_preview");
-if (previewToken) documentUrl.searchParams.set("_preview", previewToken);
 ---
 
-<Base
-	title={page.data.title}
-	description={descriptions[slug]}
-	content={{ collection: "pages", id: page.data.id, slug }}
->
-	<article class="legal-page">
-		<header class="legal-page__header">
-			<div class="legal-page__measure">
-				<nav class="legal-page__breadcrumbs" aria-label="パンくずリスト">
-					<a href="/">ホーム</a><span aria-hidden="true">/</span><span>{page.data.title}</span>
-				</nav>
-					<p class="legal-page__label">{page.data.campus_only ? "CAMPUS ONLY" : "IT CLUB"}</p>
-				<h1 {...page.edit.title}>{page.data.title}</h1>
-			</div>
-		</header>
-
-		<div class="legal-page__body">
-			<div class="legal-page__measure legal-page__prose" {...page.edit.content}>
-				<PortableText value={page.data.content} />
-			</div>
-			{page.data.document && (
-				<div class="legal-page__measure" {...page.edit.document}>
-					<PdfAttachment file={page.data.document} url={documentUrl.pathname + documentUrl.search} />
-				</div>
-			)}
-		</div>
-	</article>
-</Base>
-
-<style>
-	.legal-page__header {
-		padding: clamp(8rem, 16vw, 12rem) var(--page-gutter) clamp(3rem, 7vw, 5rem);
-		border-bottom: var(--rule-hair) solid var(--color-rule);
-	}
-
-	.legal-page__measure {
-		width: 100%;
-		max-width: 52rem;
-		margin-inline: auto;
-	}
-
-	.legal-page__breadcrumbs {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-xs);
-		margin-bottom: clamp(var(--space-xl), 6vw, var(--space-2xl));
-		color: var(--color-muted);
-		font-size: var(--text-xs);
-	}
-
-	.legal-page__breadcrumbs a { text-decoration: underline; text-underline-offset: 0.3em; }
-
-	.legal-page__label {
-		color: var(--color-accent);
-		font-family: var(--font-outlier);
-		font-size: var(--text-xs);
-		font-weight: 600;
-		letter-spacing: var(--tracking-label);
-	}
-
-	.legal-page h1 {
-		max-width: 14ch;
-		margin-top: var(--space-md);
-		font-size: clamp(2.5rem, 7vw, 5.5rem);
-		font-weight: 700;
-		line-height: 1.05;
-		letter-spacing: var(--tracking-display);
-	}
-
-	.legal-page__body {
-		padding: clamp(3rem, 8vw, 6rem) var(--page-gutter) clamp(5rem, 10vw, 8rem);
-	}
-
-	.legal-page__prose {
-		color: var(--color-ink-2);
-		font-size: clamp(1rem, 1.5vw, 1.075rem);
-		line-height: 1.95;
-	}
-
-	.legal-page__prose :global(> * + *) { margin-top: 1.4em; }
-	.legal-page__prose :global(h2) {
-		margin-top: 2.75em;
-		padding-top: var(--space-lg);
-		color: var(--color-ink);
-		border-top: var(--rule-hair) solid var(--color-rule);
-		font-size: clamp(var(--text-lg), 3vw, var(--text-xl));
-		font-weight: 700;
-		line-height: var(--leading-heading);
-		letter-spacing: -0.025em;
-	}
-
-	.legal-page__prose :global(a) {
-		color: var(--color-accent);
-		text-decoration: underline;
-		text-underline-offset: 0.25em;
-	}
-
-	@media (hover: hover) and (pointer: fine) {
-		.legal-page__breadcrumbs a:hover { color: var(--color-ink); }
-	}
-</style>
+{route ? <PageContent route={route} /> : archive && <CategoryArchive archive={archive} />}

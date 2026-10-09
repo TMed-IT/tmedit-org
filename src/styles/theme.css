@@ -23,6 +23,36 @@
 .pdf-attachment iframe { display: block; width: 100%; height: clamp(24rem, 75vh, 56rem); border: var(--rule-hair) solid var(--color-rule); }
 .pdf-attachment__help { margin-top: var(--space-sm); color: var(--color-muted); font-size: var(--text-sm); line-height: var(--leading-body); }
 
+.page-categories { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-sm) var(--space-lg); margin-top: var(--space-lg); font-size: var(--text-sm); }
+.page-categories__label { color: var(--color-muted); }
+.page-categories ul { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-lg); margin: 0; padding: 0; list-style: none; }
+.page-categories a { color: var(--color-accent); text-decoration: underline; text-underline-offset: .25em; overflow-wrap: anywhere; }
+.category-measure { width: 100%; max-width: 62rem; margin-inline: auto; }
+.category-hero { padding: clamp(8rem, 16vw, 12rem) var(--page-gutter) clamp(3rem, 7vw, 5rem); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.category-breadcrumbs { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-bottom: var(--space-xl); color: var(--color-muted); font-size: var(--text-xs); }
+.category-breadcrumbs a { text-decoration: underline; text-underline-offset: .25em; }
+.category-eyebrow { color: var(--color-accent); font-size: var(--text-sm); }
+.category-hero h1 { margin-top: var(--space-md); font-size: clamp(2.5rem, 7vw, 5.5rem); font-weight: 700; line-height: 1.15; letter-spacing: var(--tracking-display); overflow-wrap: anywhere; }
+.category-description { margin-top: var(--space-lg); color: var(--color-ink-2); font-size: var(--text-md); line-height: var(--leading-body); white-space: pre-line; overflow-wrap: anywhere; }
+.category-body { padding: clamp(3rem, 7vw, 5rem) var(--page-gutter) clamp(5rem, 10vw, 8rem); }
+.category-section + .category-section { margin-top: var(--space-2xl); }
+.category-section h2 { color: var(--color-ink); font-size: var(--text-lg); font-weight: 700; }
+.category-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--space-md); }
+.category-heading > p, .category-empty { color: var(--color-muted); }
+.category-empty { margin-top: var(--space-lg); }
+.category-children { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-lg); padding: 0; list-style: none; }
+.category-children a { display: flex; gap: var(--space-lg); padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-rule); color: var(--color-accent); }
+.category-pages { margin-top: var(--space-lg); padding: 0; list-style: none; border-top: var(--rule-hair) solid var(--color-rule); }
+.category-pages a { display: flex; align-items: baseline; gap: var(--space-md); padding-block: var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); color: var(--color-ink); }
+.category-pages a > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.category-campus-label { flex-shrink: 0; color: var(--color-muted); font-size: var(--text-xs); }
+.category-page-arrow { margin-left: auto; color: var(--color-accent); }
+.page-categories a:focus-visible, .category-body a:focus-visible, .category-breadcrumbs a:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
+@media (hover: hover) and (pointer: fine) {
+	.page-categories a:hover, .category-breadcrumbs a:hover, .category-pages a:hover { color: var(--color-accent); }
+	.category-children a:hover { background: var(--color-paper-3); }
+}
+
 :root {
 	color-scheme: dark;
 	/* Club palette */

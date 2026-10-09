@@ -1,0 +1,61 @@
+---
+import Base from "../layouts/Base.astro";
+import { categoryHref } from "../lib/category-archive";
+import type { getCategoryArchive } from "../lib/category-archive";
+import { categoryPageHref } from "../lib/page-route";
+
+interface Props {
+	archive: NonNullable<Awaited<ReturnType<typeof getCategoryArchive>>>;
+}
+const { category, pages } = Astro.props.archive;
+---
+
+<Base title={category.label} description={category.description}>
+	<header class="category-hero">
+		<div class="category-measure">
+			<nav class="category-breadcrumbs" aria-label="パンくずリスト">
+				<a href="/">ホーム</a><span aria-hidden="true">/</span><span>{category.label}</span>
+			</nav>
+			<p class="category-eyebrow">カテゴリー</p>
+			<h1>{category.label}</h1>
+			{category.description && <p class="category-description">{category.description}</p>}
+		</div>
+	</header>
+
+	<div class="category-body">
+		<div class="category-measure">
+			{category.children.length > 0 && (
+				<section class="category-section" aria-labelledby="child-categories-title">
+					<h2 id="child-categories-title">子カテゴリー</h2>
+					<ul class="category-children">
+						{category.children.map((child) => (
+							<li><a href={categoryHref(child.slug)}>{child.label}<span aria-hidden="true">→</span></a></li>
+						))}
+					</ul>
+				</section>
+			)}
+
+			<section class="category-section" aria-labelledby="category-pages-title">
+				<div class="category-heading">
+					<h2 id="category-pages-title">このカテゴリーのページ</h2>
+					<p>{pages.length}件</p>
+				</div>
+				{pages.length === 0 ? (
+					<p class="category-empty">現在、表示できるページはありません。</p>
+				) : (
+					<ul class="category-pages">
+						{pages.map((page) => (
+							<li>
+								<a href={categoryPageHref(category.slug, page.id)}>
+									<span>{page.data.title}</span>
+									{page.data.campus_only && <span class="category-campus-label">学内限定</span>}
+									<span class="category-page-arrow" aria-hidden="true">→</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+		</div>
+	</div>
+</Base>

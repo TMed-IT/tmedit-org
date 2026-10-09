@@ -1,0 +1,21 @@
+---
+import { decodeSlug } from "emdash";
+import PageContent from "../../components/PageContent.astro";
+import { getPageRoute } from "../../lib/page-route";
+import { disableSharedCache, isCampusRequest, privateRedirect } from "../../lib/campus-access";
+import { verificationPath } from "../../lib/verify-client";
+
+const slug = decodeSlug(Astro.params.slug);
+const categorySlug = decodeSlug(Astro.params.category);
+if (!slug || !categorySlug) return Astro.rewrite("/404");
+const route = await getPageRoute(slug, categorySlug, Astro.currentLocale);
+if (!route) return Astro.rewrite("/404");
+Astro.cache.set(route.cacheHint);
+if (route.page.data.campus_only) {
+	disableSharedCache(Astro.cache, Astro.response.headers);
+	Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+	if (!(await isCampusRequest(Astro.cookies))) return privateRedirect(verificationPath(Astro.url), Astro.response.headers);
+}
+---
+
+<PageContent route={route} />

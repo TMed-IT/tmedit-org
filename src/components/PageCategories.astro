@@ -1,0 +1,20 @@
+---
+import type { TaxonomyTerm } from "emdash";
+import { categoryHref } from "../lib/category-archive";
+
+interface Props {
+	categories: TaxonomyTerm[];
+}
+const { categories } = Astro.props;
+---
+
+{categories.length > 0 && (
+	<nav class="page-categories" aria-label="このページのカテゴリー">
+		<span class="page-categories__label">カテゴリー</span>
+		<ul>
+			{categories.map((category) => (
+				<li><a href={categoryHref(category.slug)}>{category.label}</a></li>
+			))}
+		</ul>
+	</nav>
+)}

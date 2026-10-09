@@ -16,3 +16,11 @@ export function disableSharedCache(cache: { set(value: false): void }, headers: 
 	cache.set(false);
 	headers.set("Cache-Control", "private, no-store");
 }
+
+/** Astro.redirect() returns a new Response without Astro.response's headers. */
+export function privateRedirect(location: string, headers: Headers): Response {
+	const responseHeaders = new Headers(headers);
+	responseHeaders.set("Cache-Control", "private, no-store");
+	responseHeaders.set("Location", location);
+	return new Response(null, { status: 302, headers: responseHeaders });
+}

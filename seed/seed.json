@@ -121,6 +121,15 @@
       ]
     }
   ],
+  "taxonomies": [
+    {
+      "name": "category",
+      "label": "カテゴリー",
+      "labelSingular": "カテゴリー",
+      "hierarchical": true,
+      "collections": ["pages"]
+    }
+  ],
   "menus": [
     {
       "name": "primary",

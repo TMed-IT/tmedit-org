@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getEmDashCollection } from "emdash";
+import { pageHref } from "../lib/page-route";
 
 const SUPPORTED_COLLECTIONS = new Set(["news", "pages"]);
 
@@ -10,11 +11,6 @@ function escapeXml(value: string): string {
 		.replace(/>/g, "&gt;")
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&apos;");
-}
-
-function entryPath(collection: "news" | "pages", slug: string): string {
-	if (collection === "news") return `/newsroom/${slug}`;
-	return slug === "home" ? "/" : `/${slug}`;
 }
 
 export const GET: APIRoute = async ({ params, url, cache }) => {
@@ -40,7 +36,10 @@ export const GET: APIRoute = async ({ params, url, cache }) => {
 			return !data.campus_only && !data.seo?.noIndex;
 		})
 		.map((entry) => {
-			const location = new URL(entryPath(typedCollection, entry.id), url.origin).href;
+			const path = typedCollection === "news"
+				? `/newsroom/${entry.id}`
+				: entry.id === "home" ? "/" : pageHref(entry.id, entry.data.terms?.category);
+			const location = new URL(path, url.origin).href;
 			return [
 				"  <url>",
 				`    <loc>${escapeXml(location)}</loc>`,
