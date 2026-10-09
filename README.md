@@ -190,7 +190,11 @@ APIや設定の仕様を調べるときは、[EmDashのドキュメント](https
 送信元の `EMAIL_FROM`・`EMAIL_FROM_NAME`、公開URLの `SITE_URL` も確認します。
 
 verify側で作成したSecrets StoreのIDを `CLOUDFLARE_SECRETS_STORE_ID` に設定します。
-デプロイ時に `VERIFY_CLIENT_SECRET` バインディングを、同じストアの `CLIENT_SECRET_TMEDIT` につなぎます。
+デプロイ時に `VERIFY_CLIENT_SECRET` バインディングを、同じストアの `CLIENT_SECRET_MAIN` につなぎます。
+`VERIFY_CLIENT_SECRET` はこのサイトのコードで使うバインディング名です。
+Secrets Storeに存在する必要があるシークレット名は `CLIENT_SECRET_MAIN` です。
+verifyのクライアント設定は [src/config.mjs](https://github.com/TMed-IT/verify/blob/main/src/config.mjs)、
+認証手順は [APIの使い方](https://github.com/TMed-IT/verify/blob/main/docs/api.md) を参照してください。
 シークレットの値を取得したり、このリポジトリへコピーしたりする必要はありません。
 verifyと同じCloudflareアカウントにデプロイしてください。
 

@@ -8,7 +8,7 @@ if (!storeId || !/^[a-f0-9]{32}$/i.test(storeId) || /^0+$/.test(storeId)) {
 const path = new URL("../dist/server/wrangler.json", import.meta.url);
 const config = JSON.parse(await readFile(path, "utf8"));
 const binding = config.secrets_store_secrets?.find(item => item.binding === "VERIFY_CLIENT_SECRET");
-if (!binding || binding.secret_name !== "CLIENT_SECRET_TMEDIT") {
+if (!binding || binding.secret_name !== "CLIENT_SECRET_MAIN") {
   throw new Error("The built Worker is missing the verify secret binding. Run pnpm build first.");
 }
 binding.store_id = storeId;

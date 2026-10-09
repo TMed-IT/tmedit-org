@@ -21,7 +21,7 @@
   },
   // Local store placeholder; scripts/configure-verify-store.mjs sets the production ID.
   "secrets_store_secrets": [
-    { "binding": "VERIFY_CLIENT_SECRET", "store_id": "00000000000000000000000000000000", "secret_name": "CLIENT_SECRET_TMEDIT" },
+    { "binding": "VERIFY_CLIENT_SECRET", "store_id": "00000000000000000000000000000000", "secret_name": "CLIENT_SECRET_MAIN" },
   ],
   "send_email": [
     {
