@@ -39,6 +39,7 @@ pnpm dev
 | `pnpm preview` | ビルド結果をローカルで確認する |
 | `pnpm deploy` | ビルド・本番D1のマイグレーション後、Cloudflare Workersへデプロイする |
 | `pnpm db:migrate` | 本番D1に未適用のSQLマイグレーションを適用する |
+| `pnpm db:migration:list` | 本番D1の未適用SQLマイグレーションを確認する |
 | `pnpm db:migration:create 名前` | 次の番号のSQLマイグレーションを作成する |
 
 ### フォントの配信
@@ -333,6 +334,7 @@ GitHubのActions画面からも、`main` を選んで手動実行できます。
 既存DBへの変更は `migrations/` の番号付きSQLで管理します。
 Wranglerが `d1_migrations` に適用履歴を記録し、次回以降は適用済みのファイルをスキップします。
 EmDash本体の内部マイグレーションとは別の履歴です。
+各SQLの役割と運用方法は [migrations/README.md](./migrations/README.md) を参照してください。
 SQLが失敗した場合、そのファイルの変更はロールバックされ、Workerのデプロイも停止します。
 複数ファイルのうち先に成功した分は残るので、原因を修正して再実行してください。
 
