@@ -1,0 +1,51 @@
+---
+import Base from "../layouts/Base.astro";
+import { taxonomyHref } from "../lib/taxonomy-archive";
+import type { getTaxonomyArchive } from "../lib/taxonomy-archive";
+import { taxonomyPageHref } from "../lib/page-route";
+
+interface Props {
+	archive: NonNullable<Awaited<ReturnType<typeof getTaxonomyArchive>>>;
+}
+const { taxonomy, term, pages } = Astro.props.archive;
+---
+
+<Base title={`${taxonomy.label} ${term.label}`} description={term.description}>
+	<header class="taxonomy-hero">
+		<div class="taxonomy-measure">
+			<nav class="taxonomy-breadcrumbs" aria-label="パンくずリスト">
+				<a href="/">ホーム</a><span aria-hidden="true">/</span><a href={taxonomyHref(taxonomy.name)}>{taxonomy.label}</a><span aria-hidden="true">/</span><span>{term.label}</span>
+			</nav>
+			<p class="taxonomy-eyebrow">{taxonomy.label}</p>
+			<h1>{term.label}</h1>
+			{term.description && <p class="taxonomy-description">{term.description}</p>}
+		</div>
+	</header>
+
+	<div class="taxonomy-body">
+		<div class="taxonomy-measure">
+
+			<section class="taxonomy-section" aria-labelledby="taxonomy-pages-title">
+				<div class="taxonomy-heading">
+					<h2 id="taxonomy-pages-title">この項目のページ</h2>
+					<p>{pages.length}件</p>
+				</div>
+				{pages.length === 0 ? (
+					<p class="taxonomy-empty">現在、表示できるページはありません。</p>
+				) : (
+					<ul class="taxonomy-pages">
+						{pages.map((page) => (
+							<li>
+								<a href={taxonomyPageHref(taxonomy.name, term.slug, page.id)}>
+									<span>{page.data.title}</span>
+									{page.data.campus_only && <span class="taxonomy-campus-label">学内限定</span>}
+									<span class="taxonomy-page-arrow" aria-hidden="true">→</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+		</div>
+	</div>
+</Base>

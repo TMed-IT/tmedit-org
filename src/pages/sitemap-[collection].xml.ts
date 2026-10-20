@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ params, url, cache }) => {
 		.map((entry) => {
 			const path = typedCollection === "news"
 				? `/newsroom/${entry.id}`
-				: entry.id === "home" ? "/" : pageHref(entry.id, entry.data.terms?.category);
+				: entry.id === "home" ? "/" : pageHref(entry.id, entry.data.terms);
 			const location = new URL(path, url.origin).href;
 			return [
 				"  <url>",

@@ -1,8 +1,8 @@
 ---
 import { decodeSlug } from "emdash";
 import PageContent from "../components/PageContent.astro";
-import CategoryArchive from "../components/CategoryArchive.astro";
-import { getCategoryArchive } from "../lib/category-archive";
+import TaxonomyIndex from "../components/TaxonomyIndex.astro";
+import { getTaxonomyIndex } from "../lib/taxonomy-archive";
 import { getPageRoute, pageHref } from "../lib/page-route";
 import { disableSharedCache, isCampusRequest, privateRedirect } from "../lib/campus-access";
 import { verificationPath } from "../lib/verify-client";
@@ -10,9 +10,9 @@ import { verificationPath } from "../lib/verify-client";
 const slug = decodeSlug(Astro.params.slug);
 if (!slug) return Astro.rewrite("/404");
 
-// Existing fixed pages take precedence when a category has the same slug.
+// Existing fixed pages take precedence over a taxonomy with the same name.
 const route = await getPageRoute(slug, undefined, Astro.currentLocale);
-const archive = route ? null : await getCategoryArchive(slug, Astro.cookies, Astro.currentLocale);
+const archive = route ? null : await getTaxonomyIndex(slug, Astro.currentLocale);
 if (!route && !archive) return Astro.rewrite("/404");
 
 if (route) {
@@ -22,16 +22,15 @@ if (route) {
 		Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
 		if (!(await isCampusRequest(Astro.cookies))) return privateRedirect(verificationPath(Astro.url), Astro.response.headers);
 	}
-	const path = pageHref(route.page.id, route.page.data.terms?.category);
+	const path = pageHref(route.page.id, route.terms);
 	if (path !== `/${encodeURIComponent(route.page.id)}`) {
-		// Category assignments can change, so this redirect must not be permanent.
+		// Term assignments can change, so this redirect must not be permanent.
 		disableSharedCache(Astro.cache, Astro.response.headers);
 		return privateRedirect(path + Astro.url.search, Astro.response.headers);
 	}
 } else if (archive) {
 	Astro.cache.set(archive.cacheHint);
-	disableSharedCache(Astro.cache, Astro.response.headers);
 }
 ---
 
-{route ? <PageContent route={route} /> : archive && <CategoryArchive archive={archive} />}
+{route ? <PageContent route={route} /> : archive && <TaxonomyIndex index={archive} />}

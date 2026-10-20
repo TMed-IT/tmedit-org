@@ -123,11 +123,12 @@
   ],
   "taxonomies": [
     {
-      "name": "category",
-      "label": "カテゴリー",
-      "labelSingular": "カテゴリー",
-      "hierarchical": true,
-      "collections": ["pages"]
+      "name": "omorisai",
+      "label": "大森祭",
+      "labelSingular": "大森祭",
+      "hierarchical": false,
+      "collections": ["pages"],
+      "terms": [{ "slug": "2026", "label": "2026" }]
     }
   ],
   "menus": [

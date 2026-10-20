@@ -1,0 +1,19 @@
+---
+import type { TaxonomyDef } from "emdash";
+import type { PageTerms } from "../lib/page-route";
+import { termHref } from "../lib/taxonomy-archive";
+
+interface Props { taxonomies: TaxonomyDef[]; terms: PageTerms; }
+const { taxonomies, terms } = Astro.props;
+---
+
+{taxonomies.map((taxonomy) => (terms[taxonomy.name]?.length > 0 && (
+	<nav class="page-taxonomies" aria-label={`このページの${taxonomy.label}`}>
+		<span class="page-taxonomies__label">{taxonomy.label}</span>
+		<ul>
+			{terms[taxonomy.name].map((term) => (
+				<li><a href={termHref(taxonomy.name, term.slug)}>{term.label}</a></li>
+			))}
+		</ul>
+	</nav>
+)))}

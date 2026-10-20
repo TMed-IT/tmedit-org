@@ -25,6 +25,7 @@ const { outputFiles } = await build({
         export const decodeSlug = value => value ? decodeURIComponent(value) : undefined;
         export const getEmDashEntry = async () => globalThis.__attachmentTest.result;
         export class OptionsRepository {}
+        export const invalidateTaxonomyObjectCache = () => {};
         ` }));
   }}],
 });

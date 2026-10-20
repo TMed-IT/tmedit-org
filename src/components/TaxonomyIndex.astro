@@ -1,0 +1,36 @@
+---
+import Base from "../layouts/Base.astro";
+import { termHref } from "../lib/taxonomy-archive";
+import type { getTaxonomyIndex } from "../lib/taxonomy-archive";
+interface Props { index: NonNullable<Awaited<ReturnType<typeof getTaxonomyIndex>>>; }
+const { taxonomy, terms } = Astro.props.index;
+---
+
+<Base title={taxonomy.label}>
+	<header class="taxonomy-hero">
+		<div class="taxonomy-measure">
+			<nav class="taxonomy-breadcrumbs" aria-label="パンくずリスト">
+				<a href="/">ホーム</a><span aria-hidden="true">/</span><span>{taxonomy.label}</span>
+			</nav>
+			<p class="taxonomy-eyebrow">分類</p>
+			<h1>{taxonomy.label}</h1>
+		</div>
+	</header>
+	<div class="taxonomy-body">
+		<div class="taxonomy-measure">
+			<section class="taxonomy-section" aria-labelledby="taxonomy-terms-title">
+				<h2 id="taxonomy-terms-title">{taxonomy.label}の一覧</h2>
+				{terms.length === 0 ? <p class="taxonomy-empty">現在、分類項目はありません。</p> : (
+					<ul class="taxonomy-pages">
+						{terms.map((term) => (
+							<li>
+								<a href={termHref(taxonomy.name, term.slug)}><span>{term.label}</span><span class="taxonomy-page-arrow" aria-hidden="true">→</span></a>
+								{term.description && <p class="taxonomy-description">{term.description}</p>}
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+		</div>
+	</div>
+</Base>

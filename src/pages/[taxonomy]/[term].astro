@@ -1,0 +1,18 @@
+---
+import { decodeSlug } from "emdash";
+import TaxonomyArchive from "../../components/TaxonomyArchive.astro";
+import { getTaxonomyArchive } from "../../lib/taxonomy-archive";
+import { disableSharedCache } from "../../lib/campus-access";
+
+const name = decodeSlug(Astro.params.taxonomy);
+const slug = decodeSlug(Astro.params.term);
+if (!name || !slug) return Astro.rewrite("/404");
+// The archive depends on the visitor's verify status.
+disableSharedCache(Astro.cache, Astro.response.headers);
+const archive = await getTaxonomyArchive(name, slug, Astro.cookies, Astro.currentLocale);
+if (!archive) return Astro.rewrite("/404");
+Astro.cache.set(archive.cacheHint);
+disableSharedCache(Astro.cache, Astro.response.headers);
+---
+
+<TaxonomyArchive archive={archive} />

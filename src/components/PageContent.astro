@@ -2,14 +2,14 @@
 import { PortableText } from "emdash/ui";
 import Base from "../layouts/Base.astro";
 import PdfAttachment from "./PdfAttachment.astro";
-import PageCategories from "./PageCategories.astro";
-import { categoryHref } from "../lib/category-archive";
+import PageTaxonomies from "./PageTaxonomies.astro";
+import { taxonomyHref, termHref } from "../lib/taxonomy-archive";
 import type { getPageRoute } from "../lib/page-route";
 
 interface Props {
 	route: NonNullable<Awaited<ReturnType<typeof getPageRoute>>>;
 }
-const { page, category } = Astro.props.route;
+const { page, taxonomy, term, terms, taxonomies } = Astro.props.route;
 const descriptions: Record<string, string> = {
 	privacy: "東邦大学医学部 IT部ウェブサイトにおける個人情報の取り扱い方針です。",
 	terms: "東邦大学医学部 IT部ウェブサイトの利用条件です。",
@@ -30,12 +30,12 @@ if (previewToken) documentUrl.searchParams.set("_preview", previewToken);
 			<div class="legal-page__measure">
 				<nav class="legal-page__breadcrumbs" aria-label="パンくずリスト">
 					<a href="/">ホーム</a><span aria-hidden="true">/</span>
-					{category && <><a href={categoryHref(category.slug)}>{category.label}</a><span aria-hidden="true">/</span></>}
+					{taxonomy && term && <><a href={taxonomyHref(taxonomy.name)}>{taxonomy.label}</a><span aria-hidden="true">/</span><a href={termHref(taxonomy.name, term.slug)}>{term.label}</a><span aria-hidden="true">/</span></>}
 					<span>{page.data.title}</span>
 				</nav>
 					<p class="legal-page__label">{page.data.campus_only ? "CAMPUS ONLY" : "IT CLUB"}</p>
 				<h1 {...page.edit.title}>{page.data.title}</h1>
-				<PageCategories categories={page.data.terms?.category ?? []} />
+				<PageTaxonomies taxonomies={taxonomies} terms={terms} />
 			</div>
 		</header>
 

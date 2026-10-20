@@ -189,3 +189,46 @@ test("PDF migration invalidates active media coverage and rolls back when active
     assert.equal(status.reconciliation_required, 1);
   });
 });
+
+const taxonomySql = await readFile(new URL("../migrations/0006_omorisai_taxonomy.sql", import.meta.url), "utf8");
+const prepareOmorisai = oldSeed => {
+  oldSeed.taxonomies = [{ name: "category", label: "カテゴリー", hierarchical: true, collections: ["pages"], terms: [{ slug: "omorisai2026", label: "大森祭2026", description: "既存の説明" }] }];
+  oldSeed.content.pages.push({ id: "festival-page", slug: "festival-guide", status: "published", data: { title: "参加案内", content: [], campus_only: false }, taxonomies: { category: ["omorisai2026"] } });
+};
+
+test("omorisai migration keeps term identity and page assignments, preserves content, and registers old URLs", async () => {
+  await fixture(db => {
+    const pages = db.prepare("SELECT * FROM ec_pages ORDER BY id").all();
+    const revisions = db.prepare("SELECT * FROM revisions ORDER BY id").all();
+    const assignments = db.prepare("SELECT * FROM content_taxonomies ORDER BY entry_id").all();
+    const oldTerm = db.prepare("SELECT * FROM taxonomies WHERE name='category'").get();
+    apply(db, taxonomySql);
+    const term = db.prepare("SELECT * FROM taxonomies WHERE name='omorisai'").get();
+    assert.equal(term.id, oldTerm.id);
+    assert.equal(term.translation_group, oldTerm.translation_group);
+    assert.equal(term.data, oldTerm.data);
+    assert.equal(term.slug, "2026");
+    assert.equal(term.label, "2026");
+    assert.equal(db.prepare("SELECT 1 FROM _emdash_taxonomy_defs WHERE name='category'").get(), undefined);
+    assert.equal(db.prepare("SELECT hierarchical FROM _emdash_taxonomy_def_groups WHERE name='omorisai'").get().hierarchical, 0);
+    assert.deepEqual(db.prepare("SELECT * FROM ec_pages ORDER BY id").all(), pages);
+    assert.deepEqual(db.prepare("SELECT * FROM revisions ORDER BY id").all(), revisions);
+    assert.deepEqual(db.prepare("SELECT * FROM content_taxonomies ORDER BY entry_id").all(), assignments);
+    for (const source of ["/omorisai26", "/omorisai2026"]) {
+      assert.equal(db.prepare("SELECT destination FROM _emdash_redirects WHERE source=?").get(source).destination, "/omorisai/2026");
+      assert.equal(db.prepare("SELECT destination FROM _emdash_redirects WHERE source=?").get(source+"/festival-guide").destination, "/omorisai/2026/festival-guide");
+    }
+    apply(db, taxonomySql);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM _emdash_redirects WHERE group_name='taxonomy-migration'").get().n, 4);
+  }, prepareOmorisai);
+});
+
+test("omorisai migration refuses unexpected categories without deleting or changing them", async () => {
+  await fixture(db => {
+    db.exec("INSERT INTO taxonomies (id,name,slug,label,locale,translation_group) VALUES ('unexpected','category','keep','Keep','ja','unexpected')");
+    const terms = db.prepare("SELECT * FROM taxonomies ORDER BY id").all();
+    assert.throws(() => apply(db, taxonomySql), /CHECK constraint/);
+    assert.deepEqual(db.prepare("SELECT * FROM taxonomies ORDER BY id").all(), terms);
+    assert.equal(db.prepare("SELECT 1 FROM _emdash_taxonomy_def_groups WHERE name='omorisai'").get(), undefined);
+  }, prepareOmorisai);
+});

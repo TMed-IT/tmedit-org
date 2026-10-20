@@ -8,7 +8,7 @@ import { runMigrations } from "emdash/db";
 import { applySeed } from "emdash/seed";
 import seed from "../seed/seed.json" with { type: "json" };
 import { hasSlugPathSeparator, validateSlugRequest } from "../src/lib/slug-validation.ts";
-import { installSlugConstraints } from "../src/lib/slug-policy.mjs";
+import { installSlugConstraints, slashSlugConstraints, collisionSlugConstraints } from "../src/lib/slug-policy.mjs";
 import { resetSiteContent } from "../src/lib/seed-reset.mjs";
 
 test("CMS requests reject slash slugs and leave valid slug requests readable", async () => {
@@ -36,31 +36,61 @@ test("CMS requests reject slash slugs and leave valid slug requests readable", a
   assert.equal(await validateSlugRequest(unrelated), null);
 });
 
-test("slug API validation detects reserved paths and collisions across page/category namespaces", async () => {
+test("slug API validation reserves taxonomy names while allowing term names to overlap", async () => {
   const db = new DatabaseSync(":memory:");
   try {
     db.exec(`CREATE TABLE ec_pages (id TEXT PRIMARY KEY, slug TEXT, deleted_at TEXT);
-      CREATE TABLE taxonomies (id TEXT PRIMARY KEY, name TEXT, slug TEXT);
+      CREATE TABLE _emdash_taxonomy_def_groups (name TEXT, collections TEXT);
       INSERT INTO ec_pages VALUES ('page', 'guide', NULL);
       INSERT INTO ec_pages VALUES ('trashed', 'old-guide', '2026-01-01');
-      INSERT INTO taxonomies VALUES ('category', 'category', 'festival');`);
+      INSERT INTO _emdash_taxonomy_def_groups VALUES ('omorisai', '["pages"]');`);
     const adapter = { prepare: sql => ({ bind: (...args) => ({ first: async () => db.prepare(sql).get(...args) ?? null }) }) };
-    for (const [path, slug] of [
-      ["content/pages", "festival"], ["taxonomies/category/terms", "guide"],
-      ["content/pages", "newsroom"], ["taxonomies/category/terms", "newsroom"],
-      ["content/pages", "robots.txt"], ["taxonomies/category/terms", "sitemap-pages.xml"],
+    for (const [path, input] of [
+      ["content/pages", { slug: "omorisai" }], ["taxonomies", { name: "guide" }],
+      ["content/pages", { slug: "newsroom" }], ["taxonomies", { name: "newsroom" }],
+      ["content/pages", { slug: "robots.txt" }], ["taxonomies", { name: "api" }],
+      ["taxonomies/guide", { collections: ["pages"] }],
     ]) {
-      const request = new Request(`https://tmedit.org/_emdash/api/${path}`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }),
-      });
-      const response = await validateSlugRequest(request, adapter);
+      const response = await validateSlugRequest(new Request(`https://tmedit.org/_emdash/api/${path}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input),
+      }), adapter);
       assert.equal(response.status, 409);
-      assert.equal((await response.json()).error.code, "CONFLICT");
     }
-    const valid = new Request("https://tmedit.org/_emdash/api/taxonomies/category/terms", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: '{"slug":"old-guide"}',
-    });
-    assert.equal(await validateSlugRequest(valid, adapter), null);
+    for (const path of ["taxonomies/omorisai/terms", "taxonomies/technology/terms"]) {
+      for (const slug of ["guide", "2026", "newsroom"]) {
+        assert.equal(await validateSlugRequest(new Request(`https://tmedit.org/_emdash/api/${path}`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }),
+        }), adapter), null);
+      }
+    }
+    for (const slug of ["a/b", "a%2Fb", ".", ".."]) {
+      const response = await validateSlugRequest(new Request("https://tmedit.org/_emdash/api/taxonomies/omorisai/terms", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }),
+      }), adapter);
+      assert.equal(response.status, 400);
+    }
+  } finally { db.close(); }
+});
+
+test("taxonomy namespace DB constraints cover restoration, drafts, renaming, and attaching a previously unused taxonomy", () => {
+  const db = new DatabaseSync(":memory:");
+  try {
+    db.exec(`CREATE TABLE ec_pages (id TEXT PRIMARY KEY, slug TEXT, deleted_at TEXT);
+      CREATE TABLE ec_news (id TEXT PRIMARY KEY, slug TEXT);
+      CREATE TABLE taxonomies (id TEXT PRIMARY KEY, name TEXT, slug TEXT);
+      CREATE TABLE _emdash_taxonomy_def_groups (name TEXT PRIMARY KEY, collections TEXT);
+      CREATE TABLE revisions (id TEXT PRIMARY KEY, collection TEXT, data TEXT);
+      INSERT INTO ec_pages VALUES ('page', 'guide', NULL), ('trashed', 'omorisai', '2026-01-01');
+      INSERT INTO _emdash_taxonomy_def_groups VALUES ('omorisai', '["pages"]'), ('guide', '["news"]');`);
+    db.exec([...slashSlugConstraints, ...collisionSlugConstraints].map(c => c.sql).join("\n"));
+    assert.throws(() => db.exec("INSERT INTO ec_pages VALUES ('bad','omorisai',NULL)"), /page slug conflicts/);
+    assert.throws(() => db.exec("UPDATE ec_pages SET deleted_at=NULL WHERE id='trashed'"), /page slug conflicts/);
+    assert.throws(() => db.exec("UPDATE _emdash_taxonomy_def_groups SET collections='[\"pages\"]' WHERE name='guide'"), /taxonomy name conflicts/);
+    assert.throws(() => db.exec("UPDATE _emdash_taxonomy_def_groups SET name='api' WHERE name='omorisai'"), /taxonomy name conflicts/);
+    assert.throws(() => db.exec(`INSERT INTO revisions VALUES ('draft','pages','{"_slug":"omorisai"}')`), /draft page slug conflicts/);
+    db.exec("INSERT INTO taxonomies VALUES ('one','omorisai','guide'), ('two','technology','guide')");
+    assert.throws(() => db.exec("UPDATE taxonomies SET slug='a/b' WHERE id='one'"), /term slug must/);
+    assert.throws(() => db.exec("UPDATE taxonomies SET slug='..' WHERE id='two'"), /term slug must/);
   } finally { db.close(); }
 });
 

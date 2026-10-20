@@ -19,7 +19,7 @@ const { outputFiles } = await build({
     build.onLoad({ filter: /.*/, namespace: "test" }, args => ({ contents:
       args.path === "cloudflare:workers" ? "export const env = globalThis.__verifyTestEnv;" :
       args.path === "astro:middleware" ? "export const defineMiddleware = fn => fn;" :
-      "export class OptionsRepository {}" }));
+      "export class OptionsRepository {} export const invalidateTaxonomyObjectCache = () => {};" }));
   }}],
 });
 globalThis.__verifyTestEnv = { VERIFY_CLIENT_SECRET: { get: async () => "test-secret" } };

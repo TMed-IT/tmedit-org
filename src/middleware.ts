@@ -1,7 +1,8 @@
 import { VerifyInvalidGrant, VerifyUnavailable } from "./lib/verify-client";
 import type { APIContext } from "astro";
 import { defineMiddleware } from "astro:middleware";
-import { OptionsRepository } from "emdash";
+import { OptionsRepository, invalidateTaxonomyObjectCache } from "emdash";
+import { ensureTaxonomySetup } from "./lib/taxonomy-setup.mjs";
 import { env } from "cloudflare:workers";
 import { isPageAttachmentKey } from "./lib/page-attachments";
 import { validateSlugRequest } from "./lib/slug-validation";
@@ -45,6 +46,7 @@ async function ensureDevEmailProvider(context: APIContext) {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  if (context.locals.emdash?.db) await ensureTaxonomySetup(context.locals.emdash.db, invalidateTaxonomyObjectCache);
   await ensureDevEmailProvider(context);
 
   const { pathname } = context.url;
