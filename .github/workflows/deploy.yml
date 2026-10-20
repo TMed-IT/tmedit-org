@@ -5,6 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  repository_dispatch:
+    types: [docs-published]
 
 permissions:
   contents: read
@@ -53,6 +55,16 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Import the latest published documents and PDFs
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_READ_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Set DOCS_READ_TOKEN with Contents read access to the private TMed-IT/docs repository."
+            exit 1
+          fi
+          pnpm docs:sync --latest
 
       - name: Check types
         run: pnpm typecheck

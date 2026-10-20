@@ -16,7 +16,8 @@
     "db:migration:create": "wrangler d1 migrations create tmedit-org --config wrangler.jsonc",
     "types:generate": "node scripts/generate-emdash-types.mjs",
     "typecheck": "pnpm types:generate && astro check",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "docs:sync": "node scripts/sync-documents.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",

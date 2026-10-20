@@ -102,6 +102,50 @@ internal認証で最初にログインしたユーザーにはEmDashの管理者
 
 seedを変更してコミット・デプロイするだけでは、既存DBは初期化されません。
 
+### 規約・規程はdocsリポジトリから公開する
+
+`/documents` に規約・規程の一覧、`/documents/regulations` と
+`/documents/governance` にMarkdownの本文とPDFダウンロードを表示します。
+フッターの「規約・規程」から開けます。
+正本はprivateリポジトリ [TMed-IT/docs](https://github.com/TMed-IT/docs) に残し、
+CMSでは編集しません。PDFはdocs側のPandoc・LuaLaTeXで生成します。
+
+docsの `main` に変更をpushすると、PDF生成とGitHub Releaseへの公開後に
+`docs-published` の更新通知（`repository_dispatch`）をサイトへ送ります。
+サイトのデプロイActionsは最新の正式リリースを取得し、型確認・テスト・ビルドを通してからデプロイします。
+通知が遅れて届いても古い版に戻らないよう、通知内のタグではなく、その時点の最新公開版を使います。
+サイト自体の更新やデプロイActionsの手動実行でも、同じ取り込みを行います。
+
+初回は、リポジトリ間のアクセスに使うfine-grained PATを用意し、次のActions Secretsへ登録してください。
+リポジトリごとに別のトークンを使います。通常の `GITHUB_TOKEN` は発行元のリポジトリにアクセスが限られます。
+
+| Secretの登録先 | Secret名 | トークンの対象と権限 |
+| --- | --- | --- |
+| `TMed-IT/docs` | `WEBSITE_DISPATCH_TOKEN` | `TMed-IT/tmedit-org` のみ、Contents: Read and write |
+| `TMed-IT/tmedit-org` | `DOCS_READ_TOKEN` | `TMed-IT/docs` のみ、Contents: Read-only |
+
+PDF公開に成功し、通知だけ失敗した場合は、docs側の `notify-website` ジョブを再実行します。
+サイト側が失敗した場合は、サイトのデプロイActionsを再実行してください。
+トークンの期限切れやPDFの欠落がある場合、取り込みを停止し、公開中のサイトを維持します。
+
+ローカルではGitHub CLIにログインしてから、次のいずれかで取り込みます。
+
+```bash
+pnpm docs:sync --latest          # 最新の正式公開版
+pnpm docs:sync v2026.08.02-3     # 指定した公開タグ
+```
+
+本文はリリースタグが指すコミットから、PDFはそのリリースの添付ファイルから取得します。
+`scripts/sync-documents.mjs` の公開対象リストにある2文書だけを取り込みます。
+新しいMarkdownがdocsに追加されても、自動では公開しません。
+`src/documents/` にMarkdownと版情報、`brand/documents/files/` にPDFを保存します。
+通常のローカル開発とビルドでは、保存済みのファイルを使うためGitHub認証は不要です。
+PDFのURLには内容のハッシュを含め、更新前のPDFがキャッシュから返るのを防ぎます。
+
+初回のサイト公開前には `0007_documents_route.sql` も適用します。
+既存のページ・Taxonomy・下書きが `documents` を使っている場合、
+その内容を保持してマイグレーションを停止します。競合を解消してから再実行してください。
+
 ### ページをTaxonomyで分類する
 
 `pages` に紐付けたTaxonomyは公開サイトに自動で反映されます。

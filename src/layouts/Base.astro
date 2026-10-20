@@ -29,6 +29,9 @@ const [primaryMenu, footerProduct, footerCompany, footerSupport] = await Promise
 
 const footerItems = [footerProduct, footerCompany, footerSupport].flatMap((menu) => menu?.items || []);
 const publicFooterItems = footerItems.filter((item) => item.label !== "管理画面" && item.url !== "/login" && !item.url.startsWith("/_emdash/"));
+if (!publicFooterItems.some((item) => item.url === "/documents")) {
+	publicFooterItems.push({ id: "documents", label: "規約・規程", url: "/documents", children: [] });
+}
 const internalLoginUrl = "/_emdash/api/auth/internal/authorize";
 const authErrorMessages: Record<string, string> = {
 	not_configured: "認証設定を確認できませんでした。管理者にお問い合わせください。",
