@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 
 // EmDash's offline generator migrates an in-memory DB and applies only the seed
 // schema. It never reads or changes the development or production database.
-// This helper is bundled in EmDash 1.1 but has no public package export yet.
+// This helper is bundled in EmDash but has no public package export yet.
 const generatorUrl = new URL("schema/project-env-types.mjs", import.meta.resolve("emdash"));
 const { generateProjectEnvTypes } = await import(generatorUrl.href);
 const projectRoot = process.cwd();
