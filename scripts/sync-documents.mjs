@@ -1,17 +1,12 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 export const repository = "TMed-IT/docs";
-// Only documents explicitly selected for the public website are imported.
-export const publicDocuments = [
-	{ slug: "regulations", title: "規約", description: "東邦大学医学部IT部の目的、活動、入退会および運営に関する規約です。" },
-	{ slug: "governance", title: "機密情報及び成果物取扱規程", description: "機密情報・個人情報の取扱いと、活動を通じて生まれた成果物の権利・利用条件を定めています。" },
-];
 
 async function githubApi(path, binary = false) {
 	const { stdout } = await execFileAsync("gh", ["api", path, ...(binary ? ["-H", "Accept: application/octet-stream"] : [])], {
@@ -37,22 +32,24 @@ export async function collectDocuments(tag, api = githubApi) {
 	if (!/^[a-f0-9]{40}$/.test(commit.sha)) throw new Error("リリースのコミットを特定できませんでした。");
 	const files = [];
 	const documents = [];
-	for (const document of publicDocuments) {
-		const { slug, title } = document;
-		const asset = release.assets.find((candidate) => candidate.name === `${slug}.pdf`);
-		if (!asset || !Number.isSafeInteger(asset.id)) throw new Error(`${slug}.pdf がリリースにありません。`);
-		const source = await api(`${base}/contents/${slug}.md?ref=${commit.sha}`);
+	const assets = release.assets.filter((asset) => asset.name.endsWith(".pdf"));
+	if (!assets.length) throw new Error("リリースにPDFがありません。");
+	const slugs = new Set();
+	for (const asset of assets) {
+		const slug = asset.name.slice(0, -4);
+		if (!/^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u.test(slug) || slugs.has(slug) || !Number.isSafeInteger(asset.id)) throw new Error(`文書のファイル名が不正、または重複しています: ${asset.name}`);
+		slugs.add(slug);
+		const source = await api(`${base}/contents/${encodeURIComponent(slug)}.md?ref=${commit.sha}`);
 		if (source.encoding !== "base64" || typeof source.content !== "string") throw new Error(`${slug}.md を取得できませんでした。`);
 		const markdown = Buffer.from(source.content, "base64");
-		if (markdown.toString("utf8").split(/\r?\n/, 1)[0] !== `# ${title}`) throw new Error(`${slug}.md のタイトルが変更されています。公開対象を確認してください。`);
 		const pdf = await api(`${base}/releases/assets/${asset.id}`, true);
 		if (!Buffer.isBuffer(pdf) || pdf.subarray(0, 5).toString() !== "%PDF-" || pdf.length !== asset.size) throw new Error(`${slug}.pdf が不正、または不完全です。`);
 		const digest = sha256(pdf);
 		if (asset.digest && asset.digest !== `sha256:${digest}`) throw new Error(`${slug}.pdf のチェックサムが一致しません。`);
 		// PDFs are server-only assets; every download goes through verify.
-		const pdfPath = `/docs/${slug}/document`;
+		const pdfPath = `/docs/${encodeURIComponent(slug)}/document`;
 		files.push({ path: `src/generated/documents/${slug}.md`, data: markdown }, { path: `src/generated/documents/files/${digest}/${slug}.pdf`, data: pdf });
-		documents.push({ ...document, pdf: pdfPath, bytes: pdf.length, markdownSha256: sha256(markdown), pdfSha256: digest });
+		documents.push({ slug, pdf: pdfPath, bytes: pdf.length, markdownSha256: sha256(markdown), pdfSha256: digest });
 	}
 	const manifest = { repository, tag, commit: commit.sha, publishedAt: release.published_at, documents };
 	files.push({ path: "src/generated/documents/manifest.json", data: JSON.stringify(manifest, null, "\t") + "\n" });
@@ -61,10 +58,23 @@ export async function collectDocuments(tag, api = githubApi) {
 
 export async function syncDocuments(tag, { api = githubApi, root = fileURLToPath(new URL("../", import.meta.url)) } = {}) {
 	const result = await collectDocuments(tag, api);
-	for (const file of result.files) {
-		const path = resolve(root, file.path);
-		await mkdir(dirname(path), { recursive: true });
-		await writeFile(path, file.data);
+	const destination = resolve(root, "src/generated/documents");
+	await mkdir(dirname(destination), { recursive: true });
+	const staging = await mkdtemp(resolve(dirname(destination), ".documents-"));
+	const backup = `${staging}-previous`;
+	let replaced = false;
+	let installed = false;
+	try {
+		for (const file of result.files) {
+			const path = resolve(staging, file.path.slice("src/generated/documents/".length));
+			await mkdir(dirname(path), { recursive: true });
+			await writeFile(path, file.data);
+		}
+		try { await rename(destination, backup); replaced = true; } catch (error) { if (error.code !== "ENOENT") throw error; }
+		try { await rename(staging, destination); installed = true; } catch (error) { if (replaced) await rename(backup, destination); throw error; }
+	} finally {
+		await rm(staging, { recursive: true, force: true });
+		if (installed) await rm(backup, { recursive: true, force: true });
 	}
 	return result.manifest;
 }
@@ -72,7 +82,7 @@ export async function syncDocuments(tag, { api = githubApi, root = fileURLToPath
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 	try {
 		const manifest = await syncDocuments(process.argv[2]);
-		console.log(`${repository} ${manifest.tag} (${manifest.commit.slice(0, 7)}) の ${manifest.documents.length} 文書を取り込みました。差分を確認してコミットしてください。`);
+		console.log(`${repository} ${manifest.tag} (${manifest.commit.slice(0, 7)}) の ${manifest.documents.length} 文書を同期しました。`);
 	} catch (error) {
 		console.error(error.message);
 		process.exitCode = 1;

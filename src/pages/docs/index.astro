@@ -17,7 +17,6 @@ import { documents, documentHref } from "../../lib/documents";
 			{documents.map((document) => (
 				<li>
 					<h2><a href={documentHref(document.slug)}>{document.title}<span aria-hidden="true"> →</span></a></h2>
-					<p>{document.description}</p>
 				</li>
 			))}
 		</ul>

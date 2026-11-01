@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import manifest from "../src/generated/documents/manifest.json" with { type: "json" };
 
 const { build } = createRequire(createRequire(import.meta.url).resolve("wrangler"))("esbuild");
-const state = globalThis.__documentAccessTest = { env: {}, downloads: 0 };
+const state = globalThis.__documentAccessTest = { env: {}, downloads: 0, documents: manifest.documents };
 const { outputFiles } = await build({
   stdin: { contents: `
     export { onRequest } from './src/middleware';
@@ -17,9 +17,11 @@ const { outputFiles } = await build({
   plugins: [{ name: "document-test-platform", setup(build) {
     build.onResolve({ filter: /^(cloudflare:workers|astro:middleware|emdash)$/ }, args => ({ path: args.path, namespace: "test" }));
     build.onResolve({ filter: /\/document-files$/ }, () => ({ path: "document-files", namespace: "test" }));
+    build.onResolve({ filter: /\/documents$/ }, () => ({ path: "documents", namespace: "test" }));
     build.onLoad({ filter: /.*/, namespace: "test" }, args => ({ contents:
       args.path === "cloudflare:workers" ? "export const env = globalThis.__documentAccessTest.env;" :
       args.path === "astro:middleware" ? "export const defineMiddleware = fn => fn;" :
+      args.path === "documents" ? "export const documents = globalThis.__documentAccessTest.documents;" :
       args.path === "document-files" ? `export function documentBytes(slug) {
         globalThis.__documentAccessTest.downloads++;
         return slug === 'regulations' ? new TextEncoder().encode('%PDF-1.7') : null;
@@ -45,7 +47,8 @@ function context(path, token) {
   };
 }
 
-const oldPdf = `/documents/files/${manifest.documents[0].pdfSha256}/regulations.pdf`;
+const regulations = manifest.documents.find((document) => document.slug === "regulations");
+const oldPdf = `/documents/files/${regulations.pdfSha256}/regulations.pdf`;
 
 test("anonymous visits cannot render document pages or obtain current or legacy PDFs", async () => {
   globalThis.fetch = () => { throw new Error("No verify call is needed without a cookie"); };
@@ -104,7 +107,7 @@ test("revocation, CMS admin login and verify outages do not bypass document auth
 test("legacy PDF URLs lead only to authenticated downloads and unknown files return private 404s", async () => {
   globalThis.fetch = async () => Response.json({ active: true });
   const ctx = context(oldPdf, "token");
-  ctx.params = { hash: manifest.documents[0].pdfSha256, filename: "regulations.pdf" };
+  ctx.params = { hash: regulations.pdfSha256, filename: "regulations.pdf" };
   const response = await app.onRequest(ctx, () => app.legacy(ctx));
   assert.equal(response.status, 302);
   assert.equal(response.headers.get("Location"), "/docs/regulations/document");

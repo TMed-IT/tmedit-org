@@ -197,7 +197,6 @@
 .documents-list { padding: 0; margin-top: var(--space-2xl); list-style: none; border-top: var(--rule-hair) solid var(--color-rule); }
 .documents-list > li { padding-block: var(--space-xl); border-bottom: var(--rule-hair) solid var(--color-rule); }
 .documents-list h2 { font-size: var(--text-lg); font-weight: 700; line-height: var(--leading-heading); }
-.documents-list > li > p { margin-top: var(--space-md); color: var(--color-ink-2); }
 .documents-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-xl); }
 .documents-toolbar p { color: var(--color-muted); font-size: var(--text-sm); }
 .documents-toolbar .btn { flex-wrap: wrap; white-space: normal; text-align: center; }

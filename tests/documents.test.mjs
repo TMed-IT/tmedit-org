@@ -9,13 +9,18 @@ import { createDialect } from "emdash/db/sqlite";
 import { runMigrations } from "emdash/db";
 import { applySeed } from "emdash/seed";
 import seed from "../seed/seed.json" with { type: "json" };
-import { collectDocuments, publicDocuments, sha256, syncDocuments } from "../scripts/sync-documents.mjs";
+import { collectDocuments, sha256, syncDocuments } from "../scripts/sync-documents.mjs";
 import manifest from "../src/generated/documents/manifest.json" with { type: "json" };
 
 const tag = "v2026.08.02-3";
 const commit = "a".repeat(40);
 const pdf = Buffer.from("%PDF-1.7\nfixture");
-const assets = publicDocuments.map(({ slug }, index) => ({ id: index + 1, name: `${slug}.pdf`, size: pdf.length, digest: `sha256:${sha256(pdf)}` }));
+const sources = [
+	{ slug: "regulations", title: "変更後の規約" },
+	{ slug: "governance", title: "運営規程" },
+	{ slug: "新しい文書", title: "追加された文書" },
+];
+const assets = sources.map(({ slug }, index) => ({ id: index + 1, name: `${slug}.pdf`, size: pdf.length, digest: `sha256:${sha256(pdf)}` }));
 const calls = [];
 const fakeApi = async (path, binary) => {
 	calls.push(path);
@@ -23,23 +28,25 @@ const fakeApi = async (path, binary) => {
 	if (path.includes("/commits/")) return { sha: commit };
 	if (path.includes("/contents/")) {
 		assert.ok(path.endsWith(`?ref=${commit}`), "Markdown must come from the resolved tag commit, never main");
-		const document = publicDocuments.find(({ slug }) => path.includes(`/${slug}.md?`));
+		const document = sources.find(({ slug }) => path.includes(`/${encodeURIComponent(slug)}.md?`));
 		return { encoding: "base64", content: Buffer.from(`# ${document.title}\n\n本文\n`).toString("base64") };
 	}
 	if (path.includes("/releases/assets/")) { assert.equal(binary, true); return pdf; }
 	throw new Error(`Unexpected API call: ${path}`);
 };
 
-test("document sync pins Markdown and PDFs to a release and imports only selected public documents", async () => {
+test("document sync discovers release PDFs and pins their matching Markdown to the same release", async () => {
 	calls.length = 0;
 	const { files, manifest: result } = await collectDocuments(tag, fakeApi);
 	assert.equal(result.commit, commit);
 	assert.equal(result.tag, tag);
-	assert.deepEqual(result.documents.map(({ slug }) => slug), ["regulations", "governance"]);
-	assert.equal(files.length, 5);
+	assert.deepEqual(result.documents.map(({ slug }) => slug), sources.map(({ slug }) => slug));
+	assert.equal(files.length, 7);
 	assert.ok(!calls.some((path) => path.endsWith("/contents") || path.includes("ref=main")));
 	for (const document of result.documents) {
-		assert.equal(document.pdf, `/docs/${document.slug}/document`);
+		assert.equal(document.pdf, `/docs/${encodeURIComponent(document.slug)}/document`);
+		assert.equal("title" in document, false);
+		assert.equal("description" in document, false);
 		const file = files.find((entry) => entry.path === `src/generated/documents/files/${sha256(pdf)}/${document.slug}.pdf`);
 		assert.deepEqual(file?.data, pdf);
 	}
@@ -50,15 +57,18 @@ test("sync rejects unpublished releases, invalid PDFs and missing attachments be
 	const root = await mkdtemp(join(tmpdir(), "tmedit-documents-"));
 	try {
 		await writeFile(join(root, "keep.txt"), "previous published documents");
-		for (const scenario of ["missing", "truncated", "digest", "draft", "prerelease"]) {
+		for (const scenario of ["missing", "truncated", "digest", "draft", "prerelease", "filename", "duplicate", "source"]) {
 			const api = async (path, binary) => {
 				const result = await fakeApi(path, binary);
 				if (path.includes("/releases/tags/")) {
-					if (scenario === "missing") return { ...result, assets: assets.slice(0, 1) };
+					if (scenario === "missing") return { ...result, assets: [] };
 					if (scenario === "draft") return { ...result, draft: true };
 					if (scenario === "prerelease") return { ...result, prerelease: true };
 					if (scenario === "digest") return { ...result, assets: assets.map((asset) => ({ ...asset, digest: "sha256:wrong" })) };
+					if (scenario === "filename") return { ...result, assets: [{ ...assets[0], name: "../invalid.pdf" }] };
+					if (scenario === "duplicate") return { ...result, assets: [assets[0], assets[0]] };
 				}
+				if (scenario === "source" && path.includes("/contents/")) return { encoding: "none" };
 				return binary && scenario === "truncated" ? Buffer.from("not a pdf") : result;
 			};
 			await assert.rejects(syncDocuments(tag, { api, root }));
@@ -66,6 +76,22 @@ test("sync rejects unpublished releases, invalid PDFs and missing attachments be
 			assert.equal(await readFile(join(root, "keep.txt"), "utf8"), "previous published documents");
 		}
 		await assert.rejects(collectDocuments("../main", fakeApi));
+	} finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("sync ignores non-PDF attachments and removes withdrawn documents and old files", async () => {
+	const root = await mkdtemp(join(tmpdir(), "tmedit-documents-"));
+	try {
+		await syncDocuments(tag, { api: fakeApi, root });
+		const api = async (path, binary) => {
+			const result = await fakeApi(path, binary);
+			return path.includes("/releases/tags/") ? { ...result, assets: [assets[0], { name: "README.txt" }] } : result;
+		};
+		const result = await syncDocuments(tag, { api, root });
+		assert.deepEqual(result.documents.map((document) => document.slug), ["regulations"]);
+		assert.deepEqual((await readdir(join(root, "src/generated/documents"))).sort(), ["files", "manifest.json", "regulations.md"]);
+		assert.deepEqual(await readdir(join(root, `src/generated/documents/files/${sha256(pdf)}`)), ["regulations.pdf"]);
+		assert.deepEqual(await readdir(join(root, "src/generated")), ["documents"]);
 	} finally { await rm(root, { recursive: true, force: true }); }
 });
 

@@ -16,7 +16,7 @@ export const GET: APIRoute = ({ params, cache }) => {
 	const bytes = documentBytes(slug);
 	if (!bytes) return new Response("PDFが見つかりません。", { status: 404, headers });
 	headers.set("Content-Type", "application/pdf");
-	headers.set("Content-Disposition", `attachment; filename="${slug}.pdf"`);
+	headers.set("Content-Disposition", `attachment; filename="document.pdf"; filename*=UTF-8''${encodeURIComponent(`${slug}.pdf`)}`);
 	headers.set("Content-Length", String(bytes.byteLength));
 	return new Response(bytes, { headers });
 };

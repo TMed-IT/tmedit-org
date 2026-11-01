@@ -1,19 +1,14 @@
 ---
-import type { MarkdownInstance } from "astro";
 import Base from "../../layouts/Base.astro";
 import { documents, documentPublishedDate, pdfSize } from "../../lib/documents";
 
 const document = documents.find((entry) => entry.slug === Astro.params.slug);
 if (!document) return Astro.rewrite("/404");
 
-const modules = import.meta.glob<MarkdownInstance<Record<string, unknown>>>("../../generated/documents/*.md", { eager: true });
-const markdown = modules[`../../generated/documents/${document.slug}.md`];
-if (!markdown) throw new Error(`Missing document source: ${document.slug}`);
-const { Content } = markdown;
-const headings = markdown.getHeadings().filter((heading) => heading.depth === 2);
+const { Content, headings } = document;
 ---
 
-<Base title={document.title} description={document.description}>
+<Base title={document.title}>
 	<article class="documents-page">
 		<nav class="documents-breadcrumbs" aria-label="パンくずリスト">
 			<a href="/">ホーム</a><span aria-hidden="true">/</span><a href="/docs">諸則</a><span aria-hidden="true">/</span><span>{document.title}</span>
