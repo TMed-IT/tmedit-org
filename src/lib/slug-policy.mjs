@@ -1,6 +1,6 @@
 // Reserve root paths used by Astro, EmDash and the site's public assets.
 export const reservedRootSlugs = [
-	"newsroom", "documents", "api", "auth", "subscribe", "_emdash", "_astro", "_image", "login", "404",
+	"newsroom", "documents", "docs", "api", "auth", "subscribe", "_emdash", "_astro", "_image", "login", "404",
 	"omorisai26", "omorisai2026",
 	"robots.txt", "sitemap.xml", "sitemap-index.xml", "favicon.svg", "icon-fill.svg", "loading.svg", "Icon.svg",
 ];

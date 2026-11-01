@@ -1,0 +1,25 @@
+---
+import Base from "../../layouts/Base.astro";
+import { documents, documentHref } from "../../lib/documents";
+---
+
+<Base title="諸則" description="東邦大学医学部IT部の規約と規程を掲載しています。本文の閲覧とPDF版のダウンロードができます。">
+	<article class="documents-page">
+		<nav class="documents-breadcrumbs" aria-label="パンくずリスト">
+			<a href="/">ホーム</a><span aria-hidden="true">/</span><span>諸則</span>
+		</nav>
+		<header class="documents-heading">
+			<p class="documents-label">CAMPUS ONLY</p>
+			<h1>諸則</h1>
+			<p>学内向けに、IT部の活動と運営に関する諸則を掲載しています。</p>
+		</header>
+		<ul class="documents-list">
+			{documents.map((document) => (
+				<li>
+					<h2><a href={documentHref(document.slug)}>{document.title}<span aria-hidden="true"> →</span></a></h2>
+					<p>{document.description}</p>
+				</li>
+			))}
+		</ul>
+	</article>
+</Base>

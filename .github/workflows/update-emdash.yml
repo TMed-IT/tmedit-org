@@ -54,6 +54,17 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Import campus documents for validation
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_READ_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Set DOCS_READ_TOKEN with Contents read access to the private TMed-IT/docs repository."
+            exit 1
+          fi
+          pnpm docs:sync --latest
+
       - name: Check types
         if: steps.changes.outputs.changed == 'true'
         run: pnpm typecheck

@@ -1,4 +1,4 @@
-import manifest from "../documents/manifest.json";
+import manifest from "../generated/documents/manifest.json";
 
 export const documents = manifest.documents;
 export const documentRelease = manifest;
@@ -7,7 +7,7 @@ export const documentPublishedDate = new Intl.DateTimeFormat("ja-JP", {
 }).format(new Date(manifest.publishedAt));
 
 export function documentHref(slug: string): string {
-	return `/documents/${encodeURIComponent(slug)}`;
+	return `/docs/${encodeURIComponent(slug)}`;
 }
 
 export function pdfSize(bytes: number): string {

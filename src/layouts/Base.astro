@@ -28,9 +28,10 @@ const [primaryMenu, footerProduct, footerCompany, footerSupport] = await Promise
 ]);
 
 const footerItems = [footerProduct, footerCompany, footerSupport].flatMap((menu) => menu?.items || []);
-const publicFooterItems = footerItems.filter((item) => item.label !== "管理画面" && item.url !== "/login" && !item.url.startsWith("/_emdash/"));
-if (!publicFooterItems.some((item) => item.url === "/documents")) {
-	publicFooterItems.push({ id: "documents", label: "規約・規程", url: "/documents", children: [] });
+const publicFooterItems = footerItems.filter((item) => item.label !== "管理画面" && item.url !== "/login" && !item.url.startsWith("/_emdash/"))
+	.map((item) => item.url === "/documents" || item.url === "/docs" ? { ...item, label: "諸則", url: "/docs" } : item);
+if (!publicFooterItems.some((item) => item.url === "/docs")) {
+	publicFooterItems.push({ id: "docs", label: "諸則", url: "/docs", children: [] });
 }
 const internalLoginUrl = "/_emdash/api/auth/internal/authorize";
 const authErrorMessages: Record<string, string> = {

@@ -49,13 +49,13 @@ export async function collectDocuments(tag, api = githubApi) {
 		if (!Buffer.isBuffer(pdf) || pdf.subarray(0, 5).toString() !== "%PDF-" || pdf.length !== asset.size) throw new Error(`${slug}.pdf が不正、または不完全です。`);
 		const digest = sha256(pdf);
 		if (asset.digest && asset.digest !== `sha256:${digest}`) throw new Error(`${slug}.pdf のチェックサムが一致しません。`);
-		// Content-addressed paths avoid an old cached PDF being paired with new text.
-		const pdfPath = `/documents/files/${digest}/${slug}.pdf`;
-		files.push({ path: `src/documents/${slug}.md`, data: markdown }, { path: `brand${pdfPath}`, data: pdf });
+		// PDFs are server-only assets; every download goes through verify.
+		const pdfPath = `/docs/${slug}/document`;
+		files.push({ path: `src/generated/documents/${slug}.md`, data: markdown }, { path: `src/generated/documents/files/${digest}/${slug}.pdf`, data: pdf });
 		documents.push({ ...document, pdf: pdfPath, bytes: pdf.length, markdownSha256: sha256(markdown), pdfSha256: digest });
 	}
 	const manifest = { repository, tag, commit: commit.sha, publishedAt: release.published_at, documents };
-	files.push({ path: "src/documents/manifest.json", data: JSON.stringify(manifest, null, "\t") + "\n" });
+	files.push({ path: "src/generated/documents/manifest.json", data: JSON.stringify(manifest, null, "\t") + "\n" });
 	return { manifest, files };
 }
 

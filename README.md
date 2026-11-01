@@ -17,6 +17,10 @@ Node.jsとpnpmを用意します。pnpmのバージョンは `package.json` の
 pnpm install
 ```
 
+初回は、privateリポジトリ `TMed-IT/docs` を読めるアカウントでGitHub CLIにログインし、
+`pnpm docs:sync --latest` で学内限定の文書を取得してください。
+文書はGit管理外のため、新しいチェックアウトではこの取得が必要です。
+
 通常は `wrangler.jsonc` の設定で起動できます。
 ローカルのinternal認証サービスを使う場合は、`.dev.vars` を作成し、
 `AUTH_URL` にそのサービスのURLを指定して上書きします。
@@ -103,11 +107,15 @@ internal認証で最初にログインしたユーザーにはEmDashの管理者
 
 seedを変更してコミット・デプロイするだけでは、既存DBは初期化されません。
 
-### 規約・規程はdocsリポジトリから公開する
+### 諸則はdocsリポジトリから公開する
 
-`/documents` に規約・規程の一覧、`/documents/regulations` と
-`/documents/governance` にMarkdownの本文とPDFダウンロードを表示します。
-フッターの「規約・規程」から開けます。
+`/docs` に諸則の一覧、`/docs/regulations` と
+`/docs/governance` にMarkdownの本文とPDFダウンロードを表示します。
+`/docs` 以下は学内限定です。ページとPDFへのアクセスごとにverifyで在籍確認し、
+未確認の場合は認証へ進みます。認証の取り消しは次のアクセスから反映します。
+レスポンスは共有キャッシュに保存せず、検索エンジンにも登録させません。
+フッターの「諸則」から開けます。一覧の文書名を選ぶと本文が開き、本文ページからPDFをダウンロードできます。
+旧 `/documents` とその文書・PDFのURLも在籍確認の対象とし、確認後に新しいURLへ転送します。
 正本はprivateリポジトリ [TMed-IT/docs](https://github.com/TMed-IT/docs) に残し、
 CMSでは編集しません。PDFはdocs側のPandoc・LuaLaTeXで生成します。
 
@@ -139,12 +147,16 @@ pnpm docs:sync v2026.08.02-3     # 指定した公開タグ
 本文はリリースタグが指すコミットから、PDFはそのリリースの添付ファイルから取得します。
 `scripts/sync-documents.mjs` の公開対象リストにある2文書だけを取り込みます。
 新しいMarkdownがdocsに追加されても、自動では公開しません。
-`src/documents/` にMarkdownと版情報、`brand/documents/files/` にPDFを保存します。
-通常のローカル開発とビルドでは、保存済みのファイルを使うためGitHub認証は不要です。
-PDFのURLには内容のハッシュを含め、更新前のPDFがキャッシュから返るのを防ぎます。
+`src/generated/documents/` にMarkdownと版情報、`src/generated/documents/files/` にPDFを保存します。
+このディレクトリは `.gitignore` の対象で、文書の本文・PDFをサイトの公開リポジトリへコミットしません。
+一度取得した後のローカル開発とビルドでは、保存済みのファイルを使うためGitHub認証は不要です。
+デプロイとEmDash更新のActionsでは、検証前に文書を取り込みます。
+PDFはサーバーのコードに埋め込み、認証で保護した `/docs/{slug}/document` から配信します。
+公開アセットの `brand/` には配置しません。
+ビルド後にPDFがサーバーに含まれ、公開アセットに混入していないことを検査します。
 
-初回のサイト公開前には `0007_documents_route.sql` も適用します。
-既存のページ・Taxonomy・下書きが `documents` を使っている場合、
+サイト公開前には `0007_documents_route.sql` と `0008_docs_route.sql` を適用します。
+既存のページ・Taxonomy・下書きが `documents` または `docs` を使っている場合、
 その内容を保持してマイグレーションを停止します。競合を解消してから再実行してください。
 
 ### ページをTaxonomyで分類する

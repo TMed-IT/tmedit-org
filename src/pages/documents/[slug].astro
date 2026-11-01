@@ -1,36 +1,7 @@
 ---
-import type { MarkdownInstance } from "astro";
-import Base from "../../layouts/Base.astro";
-import { documents, documentPublishedDate, pdfSize } from "../../lib/documents";
+import { documents, documentHref } from "../../lib/documents";
 
 const document = documents.find((entry) => entry.slug === Astro.params.slug);
 if (!document) return Astro.rewrite("/404");
-
-const modules = import.meta.glob<MarkdownInstance<Record<string, unknown>>>("../../documents/*.md", { eager: true });
-const markdown = modules[`../../documents/${document.slug}.md`];
-if (!markdown) throw new Error(`Missing document source: ${document.slug}`);
-const { Content } = markdown;
-const headings = markdown.getHeadings().filter((heading) => heading.depth === 2);
+return Astro.redirect(documentHref(document.slug) + Astro.url.search, 301);
 ---
-
-<Base title={document.title} description={document.description}>
-	<article class="documents-page">
-		<nav class="documents-breadcrumbs" aria-label="パンくずリスト">
-			<a href="/">ホーム</a><span aria-hidden="true">/</span><a href="/documents">規約・規程</a><span aria-hidden="true">/</span><span>{document.title}</span>
-		</nav>
-		<div class="documents-toolbar">
-			<p>公開版：{documentPublishedDate}</p>
-			<a class="btn btn-secondary" href={document.pdf} download={`${document.slug}.pdf`}>PDFをダウンロード<span>（{pdfSize(document.bytes)}）</span></a>
-		</div>
-		{headings.length > 0 && (
-			<details class="documents-toc">
-				<summary>目次</summary>
-				<nav aria-label="文書の目次">
-					<ul>{headings.map((heading) => <li><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ul>
-				</nav>
-			</details>
-		)}
-		<div class="documents-prose"><Content /></div>
-		<p class="documents-back"><a href="/documents">← 規約・規程の一覧に戻る</a></p>
-	</article>
-</Base>

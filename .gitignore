@@ -51,3 +51,6 @@ npm-debug.log*
 
 # Local review artifacts (may contain machine-specific paths)
 /docs/tmp/review/
+
+# Private documents fetched from TMed-IT/docs; never publish their sources in Git.
+src/generated/documents/

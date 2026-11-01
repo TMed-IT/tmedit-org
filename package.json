@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "pnpm types:generate && astro build",
+    "build": "pnpm types:generate && astro build && node scripts/check-private-documents.mjs",
     "preview": "astro preview",
     "deploy": "pnpm build && node scripts/configure-verify-store.mjs && pnpm db:migrate && wrangler deploy",
     "db:migrate": "wrangler d1 migrations apply tmedit-org --remote --config wrangler.jsonc",
