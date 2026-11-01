@@ -57,7 +57,7 @@ export async function verifyPost(
 		const clientSecret = await readClientSecret(secret);
 		if (!clientSecret) throw new VerifyUnavailable();
 		const response = await transport(VERIFY_ORIGIN + path, {
-			method: "POST", redirect: "error", signal: AbortSignal.timeout(10_000),
+			method: "POST", redirect: "manual", signal: AbortSignal.timeout(10_000),
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ ...input, client_id: CLIENT_ID, client_secret: clientSecret }),
 		});
