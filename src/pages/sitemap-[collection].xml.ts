@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { getEmDashCollection } from "emdash";
 import { pageHref } from "../lib/page-route";
+import { documentHref } from "../lib/documents";
 
-const SUPPORTED_COLLECTIONS = new Set(["news", "pages"]);
+const SUPPORTED_COLLECTIONS = new Set(["news", "pages", "rules"]);
 
 function escapeXml(value: string): string {
 	return value
@@ -19,7 +20,7 @@ export const GET: APIRoute = async ({ params, url, cache }) => {
 		return new Response("Not found", { status: 404 });
 	}
 
-	const typedCollection = collection as "news" | "pages";
+	const typedCollection = collection as "news" | "pages" | "rules";
 	const { entries, error, cacheHint } = await getEmDashCollection(typedCollection, {
 		status: "published",
 		limit: 100,
@@ -38,6 +39,7 @@ export const GET: APIRoute = async ({ params, url, cache }) => {
 		.map((entry) => {
 			const path = typedCollection === "news"
 				? `/newsroom/${entry.id}`
+				: typedCollection === "rules" ? documentHref(entry.id)
 				: entry.id === "home" ? "/" : pageHref(entry.id, entry.data.terms);
 			const location = new URL(path, url.origin).href;
 			return [

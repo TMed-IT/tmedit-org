@@ -1,24 +1,35 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { documents, documentHref } from "../../lib/documents";
+import { getRules, documentHref } from "../../lib/documents";
+import { disableSharedCache, isCampusRequest } from "../../lib/campus-access";
+import { verificationPath } from "../../lib/verify-client";
+
+const campus = await isCampusRequest(Astro.cookies);
+const { entries, cacheHint } = await getRules(campus);
+Astro.cache.set(cacheHint);
+disableSharedCache(Astro.cache, Astro.response.headers);
 ---
 
-<Base title="諸則" description="東邦大学医学部IT部の規約と規程を掲載しています。本文の閲覧とPDF版のダウンロードができます。">
+<Base title="諸則">
 	<article class="documents-page">
 		<nav class="documents-breadcrumbs" aria-label="パンくずリスト">
 			<a href="/">ホーム</a><span aria-hidden="true">/</span><span>諸則</span>
 		</nav>
 		<header class="documents-heading">
-			<p class="documents-label">CAMPUS ONLY</p>
+			<p class="documents-label">RULES</p>
 			<h1>諸則</h1>
-			<p>学内向けに、IT部の活動と運営に関する諸則を掲載しています。</p>
+			<p>IT部の活動と運営に関する諸則を掲載しています。</p>
+			{!campus && <p><a href={verificationPath(Astro.url)}>在籍確認をして学内限定の諸則を読む</a></p>}
 		</header>
-		<ul class="documents-list">
-			{documents.map((document) => (
-				<li>
-					<h2><a href={documentHref(document.slug)}>{document.title}<span aria-hidden="true"> →</span></a></h2>
-				</li>
-			))}
-		</ul>
+		{entries.length === 0 ? <p class="documents-empty">現在、表示できる諸則はありません。</p> : (
+			<ul class="documents-list">
+				{entries.map((entry) => (
+					<li>
+						<h2><a href={documentHref(entry.id)}>{entry.data.title}<span aria-hidden="true"> →</span></a></h2>
+						{entry.data.campus_only && <span class="documents-label">学内限定</span>}
+					</li>
+				))}
+			</ul>
+		)}
 	</article>
 </Base>

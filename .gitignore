@@ -55,3 +55,4 @@ npm-debug.log*
 # Private documents fetched from TMed-IT/docs; never publish their sources in Git.
 src/generated/documents/
 src/generated/.documents-*
+src/generated/rule-fonts/

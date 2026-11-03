@@ -1,31 +1,29 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { documents, documentPublishedDate, pdfSize } from "../../lib/documents";
+import { PortableText } from "emdash/ui";
+import { getRule, ruleAccess, ruleDate, documentHref } from "../../lib/documents";
+import RulePdfDownload from "../../components/RulePdfDownload.astro";
 
-const document = documents.find((entry) => entry.slug === Astro.params.slug);
-if (!document) return Astro.rewrite("/404");
-
-const { Content, headings } = document;
+const { entry: rule, cacheHint } = await getRule(Astro.params.slug);
+if (!rule) return Astro.rewrite("/404");
+Astro.cache.set(cacheHint);
+const denied = await ruleAccess(rule.data.campus_only, Astro, Astro.response.headers);
+if (denied) return denied;
 ---
 
-<Base title={document.title}>
+<Base title={rule.data.title} content={{ collection: "rules", id: rule.data.id, slug: rule.id }}>
 	<article class="documents-page">
 		<nav class="documents-breadcrumbs" aria-label="パンくずリスト">
-			<a href="/">ホーム</a><span aria-hidden="true">/</span><a href="/docs">諸則</a><span aria-hidden="true">/</span><span>{document.title}</span>
+			<a href="/">ホーム</a><span aria-hidden="true">/</span><a href="/docs">諸則</a><span aria-hidden="true">/</span><span>{rule.data.title}</span>
 		</nav>
 		<div class="documents-toolbar">
-			<p>公開版：{documentPublishedDate}</p>
-			<a class="btn btn-secondary" href={document.pdf} download={`${document.slug}.pdf`}>PDFをダウンロード<span>（{pdfSize(document.bytes)}）</span></a>
+			<p>更新日：{ruleDate(rule.data.updatedAt)}{rule.data.campus_only && " · 学内限定"}</p>
+			<RulePdfDownload source={`${documentHref(rule.id)}/document`} />
 		</div>
-		{headings.length > 0 && (
-			<details class="documents-toc">
-				<summary>目次</summary>
-				<nav aria-label="文書の目次">
-					<ul>{headings.map((heading) => <li><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ul>
-				</nav>
-			</details>
-		)}
-		<div class="documents-prose"><Content /></div>
+		<div class="documents-prose">
+			<h1 {...rule.edit.title}>{rule.data.title}</h1>
+			<div {...rule.edit.content}><PortableText value={rule.data.content} /></div>
+		</div>
 		<p class="documents-back"><a href="/docs">← 諸則の一覧に戻る</a></p>
 	</article>
 </Base>

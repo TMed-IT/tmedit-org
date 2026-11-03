@@ -13,6 +13,44 @@
   },
   "collections": [
     {
+      "slug": "rules",
+      "label": "諸則",
+      "labelSingular": "諸則",
+      "urlPattern": "/docs/{slug}",
+      "supports": ["drafts", "revisions", "seo"],
+      "commentsEnabled": false,
+      "fields": [
+        {
+          "slug": "title",
+          "label": "タイトル",
+          "type": "string",
+          "required": true
+        },
+        {
+          "slug": "content",
+          "label": "本文",
+          "type": "portableText",
+          "required": true
+        },
+        {
+          "slug": "campus_only",
+          "label": "学内限定",
+          "type": "boolean",
+          "required": true,
+          "defaultValue": true
+        },
+        {
+          "slug": "display_order",
+          "label": "表示順",
+          "type": "integer",
+          "required": true,
+          "defaultValue": 100,
+          "indexed": true,
+          "translatable": false
+        }
+      ]
+    },
+    {
       "slug": "news",
       "label": "お知らせ",
       "labelSingular": "お知らせ",

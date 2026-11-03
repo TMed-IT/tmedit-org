@@ -200,12 +200,17 @@
 .documents-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-xl); }
 .documents-toolbar p { color: var(--color-muted); font-size: var(--text-sm); }
 .documents-toolbar .btn { flex-wrap: wrap; white-space: normal; text-align: center; }
+.rule-pdf-download { display: grid; justify-items: start; gap: var(--space-xs); }
+.rule-pdf-status { max-width: 30rem; color: var(--color-muted); font-size: var(--text-xs); }
+.rule-pdf-download button:disabled { cursor: wait; opacity: .65; }
+.documents-empty { margin-top: var(--space-xl); color: var(--color-muted); }
 .documents-toc { padding: var(--space-md); margin-bottom: var(--space-xl); border: var(--rule-hair) solid var(--color-rule); }
 .documents-toc summary { cursor: pointer; font-weight: 700; }
 .documents-toc ul { display: grid; gap: var(--space-xs); padding: var(--space-md) 0 0 var(--space-lg); color: var(--color-ink-2); font-size: var(--text-sm); }
 .documents-toc a { display: inline-block; padding-block: var(--space-2xs); }
 .documents-prose { color: var(--color-ink-2); font-size: clamp(1rem, 1.5vw, 1.075rem); line-height: 1.95; overflow-wrap: anywhere; }
 .documents-prose > * + * { margin-top: 1.4em; }
+.documents-prose > div > * + * { margin-top: 1.4em; }
 .documents-prose h1, .documents-prose h2, .documents-prose h3 { color: var(--color-ink); }
 .documents-prose h2 { margin-top: 2.75em; padding-top: var(--space-lg); border-top: var(--rule-hair) solid var(--color-rule); font-size: clamp(1.25rem, 3vw, 1.625rem); font-weight: 700; line-height: 1.6; letter-spacing: -.025em; }
 .documents-prose h3 { font-size: var(--text-md); font-weight: 700; }

@@ -1,130 +1,181 @@
 import assert from "node:assert/strict";
 import { beforeEach, afterEach, test } from "node:test";
 import { createRequire } from "node:module";
-import { readFile } from "node:fs/promises";
-import manifest from "../src/generated/documents/manifest.json" with { type: "json" };
+import { getRequestContext, runWithContext } from "emdash/request-context";
 
 const { build } = createRequire(createRequire(import.meta.url).resolve("wrangler"))("esbuild");
-const state = globalThis.__documentAccessTest = { env: {}, downloads: 0, documents: manifest.documents };
+const state = globalThis.__ruleAccess = { env: {}, entry: null, pages: [], queries: [] };
 const { outputFiles } = await build({
-  stdin: { contents: `
-    export { onRequest } from './src/middleware';
-    export { GET as download } from './src/pages/docs/[slug]/document';
-    export { GET as legacy } from './src/pages/documents/files/[hash]/[filename]';
-    export { TOKEN_COOKIE } from './src/lib/verify-client';`, resolveDir: process.cwd() },
-  bundle: true, write: false, format: "esm", platform: "node",
-  define: { "import.meta.env.DEV": "false" },
-  plugins: [{ name: "document-test-platform", setup(build) {
-    build.onResolve({ filter: /^(cloudflare:workers|astro:middleware|emdash)$/ }, args => ({ path: args.path, namespace: "test" }));
-    build.onResolve({ filter: /\/document-files$/ }, () => ({ path: "document-files", namespace: "test" }));
-    build.onResolve({ filter: /\/documents$/ }, () => ({ path: "documents", namespace: "test" }));
-    build.onLoad({ filter: /.*/, namespace: "test" }, args => ({ contents:
-      args.path === "cloudflare:workers" ? "export const env = globalThis.__documentAccessTest.env;" :
-      args.path === "astro:middleware" ? "export const defineMiddleware = fn => fn;" :
-      args.path === "documents" ? "export const documents = globalThis.__documentAccessTest.documents;" :
-      args.path === "document-files" ? `export function documentBytes(slug) {
-        globalThis.__documentAccessTest.downloads++;
-        return slug === 'regulations' ? new TextEncoder().encode('%PDF-1.7') : null;
-      }` : "export class OptionsRepository {} export const invalidateTaxonomyObjectCache = () => {};" }));
-  }}],
+	stdin: { contents: `
+		export { GET as download } from './src/pages/docs/[slug]/document';
+		export { onRequest } from './src/middleware';
+		export { getRules, getRule, ruleAccess } from './src/lib/documents';
+		export { TOKEN_COOKIE } from './src/lib/verify-client';`, resolveDir: process.cwd() },
+	bundle: true, write: false, format: "esm", platform: "node", define: { "import.meta.env.DEV": "false" },
+	plugins: [{ name: "rule-platform", setup(build) {
+		build.onResolve({ filter: /^(cloudflare:workers|astro:middleware|emdash)$/ }, args => ({ path: args.path, namespace: "test" }));
+		build.onLoad({ filter: /.*/, namespace: "test" }, args => ({ resolveDir: process.cwd(), contents:
+			args.path === "cloudflare:workers" ? "export const env = globalThis.__ruleAccess.env;" :
+			args.path === "astro:middleware" ? "export const defineMiddleware = fn => fn;" : `
+				import { getRequestContext } from 'emdash/request-context';
+				export { getRequestContext, runWithContext } from 'emdash/request-context';
+				export class OptionsRepository {} export const invalidateTaxonomyObjectCache = () => {};
+				export const decodeSlug = value => value ? decodeURIComponent(value) : undefined;
+				export async function getEmDashEntry(collection, slug) {
+					const context = getRequestContext();
+					const isPreview = !!(context?.editMode || context?.preview);
+					globalThis.__ruleAccess.queries.push({collection, slug, context});
+					if(globalThis.__ruleAccess.error)throw globalThis.__ruleAccess.error;
+					return {entry:isPreview && globalThis.__ruleAccess.previewEntry ? globalThis.__ruleAccess.previewEntry : globalThis.__ruleAccess.entry,isPreview,cacheHint:{tags:['content:rules']}};
+				}
+				export async function getEmDashCollection(collection, filter) {
+					globalThis.__ruleAccess.queries.push({collection, filter});
+					return globalThis.__ruleAccess.pages.shift();
+				}` }));
+	}}],
 });
 const app = await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString("base64")}`);
 const originalFetch = globalThis.fetch;
+const rule = (campus = false) => ({ id: "rule", data: { id: "db-id", status: "published", title: "諸則", content: [{ _type: "block", children: [{ _type: "span", text: "本文" }] }], campus_only: campus, updatedAt: new Date("2026-11-03T00:00:00Z") } });
 beforeEach(() => {
-  state.env.VERIFY_CLIENT_SECRET = { get: async () => "test-secret" };
-  state.downloads = 0;
-  globalThis.fetch = originalFetch;
+	state.env.VERIFY_CLIENT_SECRET = { get: async () => "test-secret" };
+	state.entry = rule(); state.error = null; state.queries = []; state.pages = [];
+	state.previewEntry = null;
+	globalThis.fetch = originalFetch;
 });
 afterEach(() => { globalThis.fetch = originalFetch; });
-
-function context(path, token) {
-  const values = new Map(token ? [[app.TOKEN_COOKIE, token]] : []);
-  const hints = [];
-  return {
-    url: new URL(path, "https://tmedit.org"), params: { slug: "regulations" }, locals: {},
-    cookies: { get: key => values.has(key) ? { value: values.get(key) } : undefined, delete: key => values.delete(key) },
-    cache: { set: hint => hints.push(hint) }, values, hints,
-  };
+function context(token) {
+	const values = new Map(token ? [[app.TOKEN_COOKIE, token]] : []);
+	return { params: { slug: "rule" }, url: new URL("https://tmedit.org/docs/rule/document"), locals: {},
+		cookies: { get: key => values.has(key) ? { value: values.get(key) } : undefined, delete: key => values.delete(key) },
+		cache: { set() {} }, values };
 }
 
-const regulations = manifest.documents.find((document) => document.slug === "regulations");
-const oldPdf = `/documents/files/${regulations.pdfSha256}/regulations.pdf`;
-
-test("anonymous visits cannot render document pages or obtain current or legacy PDFs", async () => {
-  globalThis.fetch = () => { throw new Error("No verify call is needed without a cookie"); };
-  for (const path of ["/docs", "/docs/regulations", "/docs/regulations/document?download=1", "/documents", "/documents/regulations", oldPdf, "/%64ocs/regulations"]) {
-    const ctx = context(path);
-    const response = await app.onRequest(ctx, () => { throw new Error("Restricted content must not render"); });
-    assert.equal(response.status, 302);
-    const target = new URL(response.headers.get("Location"), ctx.url);
-    assert.equal(target.pathname, "/auth/verify/start");
-    assert.equal(target.searchParams.get("returnTo"), path);
-    assert.equal(response.headers.get("Cache-Control"), "private, no-store");
-    assert.equal(response.headers.get("X-Robots-Tag"), "noindex, nofollow");
-    assert.equal(ctx.hints.at(-1), false);
-    assert.equal(await response.text(), "");
-  }
-  assert.equal(state.downloads, 0);
+test("public rules and PDF data are available without verify, even when the service is unavailable", async () => {
+	globalThis.fetch = () => { throw new Error("public rules must not call verify"); };
+	const ctx = context("old-token");
+	assert.equal(await app.ruleAccess(false, ctx, new Headers()), null);
+	const response = await app.download(ctx);
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+	assert.equal((await response.json()).title, "諸則");
 });
 
-test("every page, PDF and legacy visit introspects verify and never returns shared-cache headers", async () => {
-  let checks = 0;
-  globalThis.fetch = async url => { assert.match(url, /\/auth\/introspect$/); checks++; return Response.json({ active: true }); };
-  for (const path of ["/docs", "/docs/regulations", "/documents/regulations", oldPdf]) {
-    const ctx = context(path, "active-token");
-    const response = await app.onRequest(ctx, () => new Response("private content", { headers: { "Cache-Control": "public, max-age=3600" } }));
-    assert.equal(await response.text(), "private content");
-    assert.equal(response.headers.get("Cache-Control"), "private, no-store");
-    assert.equal(response.headers.get("X-Robots-Tag"), "noindex, nofollow");
-    assert.equal(ctx.hints.at(-1), false);
-  }
-  const ctx = context("/docs/regulations/document", "active-token");
-  const response = await app.onRequest(ctx, () => app.download(ctx));
-  assert.equal(response.headers.get("Content-Type"), "application/pdf");
-  assert.match(response.headers.get("Content-Disposition"), /^attachment;/);
-  assert.equal(response.headers.get("Cache-Control"), "private, no-store");
-  assert.equal(await response.text(), "%PDF-1.7");
-  assert.equal(checks, 5);
+test("PDF data remains available in edit mode without changing the caller's DB, locale or editing context", async () => {
+	const outer = { editMode: true, locale: "ja", db: { session: "request-db" }, metrics: { cacheHits: 0 } };
+	await runWithContext(outer, async () => {
+		const response = await app.download(context());
+		assert.equal(response.status, 200);
+		assert.equal((await response.json()).title, state.entry.data.title);
+		assert.equal(getRequestContext(), outer);
+	});
+	const read = state.queries[0].context;
+	assert.equal(read.editMode, false);
+	assert.equal(read.preview, undefined);
+	assert.equal(read.db, outer.db);
+	assert.equal(read.locale, outer.locale);
+	assert.equal(read.metrics, outer.metrics);
 });
 
-test("revocation, CMS admin login and verify outages do not bypass document authentication", async () => {
-  const revoked = context("/docs/regulations/document", "revoked-token");
-  revoked.locals.user = { id: "cms-admin" };
-  globalThis.fetch = async () => Response.json({ active: false });
-  const response = await app.onRequest(revoked, () => app.download(revoked));
-  assert.equal(response.status, 302);
-  assert.equal(revoked.values.has(app.TOKEN_COOKIE), false);
-  assert.equal(state.downloads, 0);
-  globalThis.fetch = async () => { throw new Error("verify unavailable"); };
-  const offline = context("/docs/regulations/document", "token");
-  const unavailable = await app.onRequest(offline, () => app.download(offline));
-  assert.equal(unavailable.status, 503);
-  assert.equal(unavailable.headers.get("Cache-Control"), "private, no-store");
-  assert.equal(offline.values.get(app.TOKEN_COOKIE), "token");
-  assert.equal(state.downloads, 0);
+test("PDF reads the published version while concurrent page reads keep draft changes and preview context", async () => {
+	state.previewEntry = { ...rule(), data: { ...rule().data, title: "未公開の変更", content: [{ _type: "block", children: [{ _type: "span", text: "下書き本文" }] }] } };
+	for (const outer of [{ editMode: true }, { editMode: false, preview: { collection: "rules", id: "db-id" } }]) {
+		await runWithContext(outer, async () => {
+			const [page, response] = await Promise.all([app.getRule("rule"), app.download(context())]);
+			assert.equal(page.isPreview, true);
+			assert.equal(page.entry.data.title, "未公開の変更");
+			assert.equal(response.status, 200);
+			const pdf = await response.json();
+			assert.equal(pdf.title, state.entry.data.title);
+			assert.deepEqual(pdf.content, state.entry.data.content);
+			assert.equal(getRequestContext(), outer);
+		});
+	}
 });
 
-test("legacy PDF URLs lead only to authenticated downloads and unknown files return private 404s", async () => {
-  globalThis.fetch = async () => Response.json({ active: true });
-  const ctx = context(oldPdf, "token");
-  ctx.params = { hash: regulations.pdfSha256, filename: "regulations.pdf" };
-  const response = await app.onRequest(ctx, () => app.legacy(ctx));
-  assert.equal(response.status, 302);
-  assert.equal(response.headers.get("Location"), "/docs/regulations/document");
-  assert.equal(response.headers.get("Cache-Control"), "private, no-store");
-  const missing = context("/docs/missing/document", "token");
-  missing.params.slug = "missing";
-  const notFound = await app.onRequest(missing, () => app.download(missing));
-  assert.equal(notFound.status, 404);
-  assert.equal(notFound.headers.get("Cache-Control"), "private, no-store");
+test("edit mode cannot use draft visibility or preview tokens to bypass published campus scope", async () => {
+	state.entry = rule(true);
+	state.previewEntry = rule(false);
+	await runWithContext({ editMode: true, preview: { collection: "rules", id: "db-id" } }, async () => {
+		const response = await app.download(context());
+		assert.equal(response.status, 302);
+		assert.equal(await response.text(), "");
+		state.entry.data.status = "draft";
+		assert.equal((await app.download(context())).status, 404);
+	});
 });
 
-test("an unrelated route remains public and former PDFs no longer exist in the public asset directory", async () => {
-  const ctx = context("/docs-other");
-  const response = await app.onRequest(ctx, () => new Response("public"));
-  assert.equal(await response.text(), "public");
-  assert.equal(ctx.hints.length, 0);
-  for (const document of manifest.documents) {
-    await assert.rejects(readFile(new URL(`../brand/documents/files/${document.pdfSha256}/${document.slug}.pdf`, import.meta.url)), { code: "ENOENT" });
-  }
+test("campus rule HTML and PDF data require verify; an admin login does not bypass it", async () => {
+	state.entry = rule(true);
+	for (const admin of [false, true]) {
+		const ctx = context(); if (admin) ctx.locals.user = { id: "admin" };
+		const response = await app.download(ctx);
+		assert.equal(response.status, 302);
+		assert.equal(new URL(response.headers.get("Location"), ctx.url).pathname, "/auth/verify/start");
+		assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+		assert.equal(response.headers.get("X-Robots-Tag"), "noindex, nofollow");
+		assert.equal(await response.text(), "");
+	}
+});
+
+test("published edits, scope changes and revoked tokens take effect on the next PDF request", async () => {
+	let checks = 0;
+	globalThis.fetch = async () => Response.json({ active: ++checks === 1 });
+	const ctx = context("token");
+	assert.equal((await app.download(ctx)).status, 200);
+	state.entry = rule(true); state.entry.data.title = "改訂版";
+	const updated = await app.download(ctx);
+	assert.equal((await updated.json()).title, "改訂版");
+	assert.equal((await app.download(ctx)).status, 302);
+	assert.equal(checks, 2);
+	assert.equal(ctx.values.has(app.TOKEN_COOKIE), false);
+	assert.equal(state.queries.length, 3);
+});
+
+test("verify outages fail closed with a private 503 and preserve the existing token", async () => {
+	state.entry = rule(true);
+	globalThis.fetch = async () => { throw new Error("offline"); };
+	const ctx = context("token");
+	const response = await app.onRequest(ctx, () => app.download(ctx));
+	assert.equal(response.status, 503);
+	assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+	assert.equal(ctx.values.get(app.TOKEN_COOKIE), "token");
+});
+
+test("rule lists paginate, filter private entries before presentation, and honor CMS failures", async () => {
+	state.pages = [
+		{ entries: [rule(), rule(true)], nextCursor: "page-2", cacheHint: { tags: ["page-1"] } },
+		{ entries: [{ ...rule(), id: "second" }], cacheHint: { tags: ["page-2"] } },
+	];
+	const result = await app.getRules(false);
+	assert.deepEqual(result.entries.map(entry => entry.id), ["rule", "second"]);
+	assert.deepEqual(result.cacheHint.tags, ["page-1", "page-2"]);
+	assert.equal(state.queries[0].filter.where.campus_only, "0");
+	assert.equal(state.queries[1].filter.cursor, "page-2");
+	state.pages = [{ entries: [rule(), rule(true)], cacheHint: {} }];
+	assert.equal((await app.getRules(true)).entries.length, 2);
+	state.error = new Error("CMS unavailable");
+	await assert.rejects(app.getRule("rule"), /CMS unavailable/);
+	state.error.name = "LiveEntryNotFoundError";
+	assert.equal((await app.download(context())).status, 404);
+});
+
+test("deleted or unpublished entries return a private 404 without generating PDF data", async () => {
+	state.entry.data.status = "draft";
+	assert.equal((await app.download(context())).status, 404);
+	state.entry = null;
+	const response = await app.download(context());
+	assert.equal(response.status, 404);
+	assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+	assert.equal((await app.getRule("bad%2Fslug")).entry, null);
+});
+
+test("rule list uses the CMS display order across pages instead of a hard-coded title order", async () => {
+	const entry = (id, title, display_order) => ({ ...rule(), id, data: { ...rule().data, title, display_order } });
+	state.pages = [
+		{ entries: [entry("second", "あとの文書", 20)], nextCursor: "next", cacheHint: {} },
+		{ entries: [entry("first", "最初の文書", 10), entry("default", "既定の文書", undefined)], cacheHint: {} },
+	];
+	assert.deepEqual((await app.getRules(true)).entries.map(entry => entry.id), ["first", "second", "default"]);
+	assert.deepEqual(state.queries[0].filter.orderBy, { display_order: "asc" });
 });

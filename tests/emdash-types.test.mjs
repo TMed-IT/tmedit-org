@@ -31,6 +31,7 @@ test("offline generation replaces stale DB types with the current seed without a
 	assert.match(types, /home: Home;/);
 	assert.match(types, /news: New;/);
 	assert.match(types, /pages: Page;/);
+	assert.match(types, /rules: Rule;/);
 	assert.doesNotMatch(types, /Ghost|hero_headline/);
 	await exec(process.execPath, [script], { cwd: root, timeout: 30_000 });
 	assert.equal(await readFile(output, "utf8"), types);

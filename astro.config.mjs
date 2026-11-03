@@ -6,6 +6,7 @@ import emdash from "emdash/astro";
 import { homeFieldWidgets } from "./src/plugins/site-settings/home-sections.mjs";
 import { internalAuth } from "./auth/index.ts";
 import { fonts } from "./src/fonts.mjs";
+import { minitypeBrowserPlugin } from "./scripts/minitype-browser-plugin.mjs";
 
 const cloudflareEmailPlugin = {
   id: "cloudflare-email",
@@ -77,5 +78,6 @@ export default defineConfig({
     }),
   ],
   fonts,
+  vite: { plugins: [minitypeBrowserPlugin()] },
   devToolbar: { enabled: false },
 });

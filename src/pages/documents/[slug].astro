@@ -1,7 +1,7 @@
 ---
-import { documents, documentHref } from "../../lib/documents";
-
-const document = documents.find((entry) => entry.slug === Astro.params.slug);
-if (!document) return Astro.rewrite("/404");
-return Astro.redirect(documentHref(document.slug) + Astro.url.search, 301);
+import { documentHref } from "../../lib/documents";
+import { privateRedirect } from "../../lib/campus-access";
+Astro.cache.set(false);
+if (!Astro.params.slug) return Astro.rewrite("/404");
+return privateRedirect(documentHref(Astro.params.slug) + Astro.url.search, new Headers());
 ---

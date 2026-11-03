@@ -6,8 +6,6 @@ import { ensureTaxonomySetup } from "./lib/taxonomy-setup.mjs";
 import { env } from "cloudflare:workers";
 import { isPageAttachmentKey } from "./lib/page-attachments";
 import { validateSlugRequest } from "./lib/slug-validation";
-import { disableSharedCache, isCampusRequest, privateRedirect } from "./lib/campus-access";
-import { verificationPath } from "./lib/verify-client";
 
 const AUTH_START_PATH = "/_emdash/api/auth/internal/authorize";
 const EMAIL_DELIVER_HOOK = "email:deliver";
@@ -103,28 +101,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   try {
-    // Include legacy document/PDF URLs and encoded root names. Static PDFs are
-    // kept outside the public asset directory so they cannot bypass this gate.
-    let documentPath = pathname;
-    try { documentPath = decodeURIComponent(documentPath); } catch { /* Invalid paths remain 404s. */ }
-    const campusDocument = /^\/(?:docs|documents)(?:\/|$)/.test(documentPath);
-    const documentHeaders = new Headers({ "X-Robots-Tag": "noindex, nofollow" });
-    if (campusDocument) {
-      disableSharedCache(context.cache, documentHeaders);
-      if (!(await isCampusRequest(context.cookies))) {
-        return privateRedirect(verificationPath(context.url), documentHeaders);
-      }
-    }
     if (context.locals.user && pathname.startsWith("/_emdash/api/")) {
       const invalidSlug = await validateSlugRequest(context.request, env.DB);
       if (invalidSlug) return invalidSlug;
     }
-    const response = await next();
-    if (campusDocument) {
-      response.headers.set("Cache-Control", "private, no-store");
-      response.headers.set("X-Robots-Tag", "noindex, nofollow");
-    }
-    return response;
+    return await next();
   } catch (error) {
     if (error instanceof VerifyInvalidGrant) {
       return new Response("確認リンクが無効か、有効期限が切れています。お知らせページから確認をやり直してください。", {

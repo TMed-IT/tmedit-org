@@ -1,22 +1,18 @@
 import type { APIRoute } from "astro";
-import { documentBytes } from "../../../lib/document-files";
+import { getRule, ruleAccess } from "../../../lib/documents";
 
 export const prerender = false;
 
-// /docs and its descendants are authenticated on every request by middleware.
-export const GET: APIRoute = ({ params, cache }) => {
-	cache.set(false);
+export const GET: APIRoute = async (context) => {
+	const { entry, cacheHint } = await getRule(context.params.slug, true);
+	context.cache.set(cacheHint);
+	context.cache.set(false);
 	const headers = new Headers({
-		"Cache-Control": "private, no-store",
-		"X-Robots-Tag": "noindex, nofollow",
-		"X-Content-Type-Options": "nosniff",
-		"Referrer-Policy": "no-referrer",
+		"Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow",
+		"X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
 	});
-	const slug = params.slug ?? "";
-	const bytes = documentBytes(slug);
-	if (!bytes) return new Response("PDFが見つかりません。", { status: 404, headers });
-	headers.set("Content-Type", "application/pdf");
-	headers.set("Content-Disposition", `attachment; filename="document.pdf"; filename*=UTF-8''${encodeURIComponent(`${slug}.pdf`)}`);
-	headers.set("Content-Length", String(bytes.byteLength));
-	return new Response(bytes, { headers });
+	if (!entry) return new Response("文書が見つかりません。", { status: 404, headers });
+	const denied = await ruleAccess(entry.data.campus_only, context, headers);
+	if (denied) return denied;
+	return Response.json({ slug: entry.id, title: entry.data.title, content: entry.data.content, updatedAt: entry.data.updatedAt.toISOString() }, { headers });
 };

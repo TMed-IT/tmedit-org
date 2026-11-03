@@ -26,10 +26,12 @@ pnpm db:migrate # 本番D1の未適用SQLを適用（ローカルDBではない�
 | --- | --- |
 | `astro.config.mjs` | EmDash、認証、D1、R2、プラグインの設定 |
 | `wrangler.jsonc` | Worker・D1・KV `tmedit-org`、R2 `tmedit-org-media` の設定 |
-| `seed/seed.json` | `home`・`pages`・`news` のスキーマ、初期コンテンツ、メニュー |
+| `seed/seed.json` | `home`・`pages`・`news`・`rules` のスキーマ、初期コンテンツ、メニュー |
 | `migrations/` | 既存の本番D1に適用するサイト固有のSQLマイグレーション |
 | `src/pages/index.astro` | ホームの活動紹介、お知らせ、プロジェクト、FAQ |
 | `src/pages/newsroom/` | お知らせの一覧と詳細 |
+| `src/pages/docs/` | CMSの諸則。記事ごとの公開範囲とPDF用データ |
+| `src/lib/rule-pdf.ts` | Minitypeによる諸則PDFの組版（ブラウザで実行） |
 | `src/pages/[slug].astro` | CMSの固定ページ。プライバシーポリシー、利用規約など |
 | `auth/` | 管理画面のinternal認証 |
 | `src/lib/verify-client.ts` | 学内限定コンテンツのverify認証 |

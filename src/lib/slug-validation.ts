@@ -10,7 +10,7 @@ export async function validateSlugRequest(request: Request, db?: Pick<D1Database
 	if (!["POST", "PUT", "PATCH"].includes(request.method)) return null;
 	const path = new URL(request.url).pathname;
 	const page = /^\/_emdash\/api\/content\/pages(?:\/|$)/.test(path);
-	const news = /^\/_emdash\/api\/content\/news(?:\/|$)/.test(path);
+	const news = /^\/_emdash\/api\/content\/(?:news|rules)(?:\/|$)/.test(path);
 	const term = /^\/_emdash\/api\/taxonomies\/[^/]+\/terms(?:\/|$)/.test(path);
 	const definition = /^\/_emdash\/api\/taxonomies(?:\/[^/]+)?$/.test(path);
 	if (!page && !news && !term && !definition) return null;

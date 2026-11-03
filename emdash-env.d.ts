@@ -53,10 +53,27 @@ export interface Page {
   terms?: Record<string, TaxonomyTerm[]>;
 }
 
+export interface Rule {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  content: PortableTextBlock[];
+  campus_only: boolean;
+  display_order: number;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
 declare module "emdash" {
   interface EmDashCollections {
     home: Home;
     news: New;
     pages: Page;
+    rules: Rule;
   }
 }
